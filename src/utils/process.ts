@@ -2,6 +2,7 @@ import { spawn, exec, ChildProcess } from "child_process";
 import { promisify } from "util";
 import * as path from "path";
 import * as fs from "fs";
+import WebSocket from "ws";
 
 // Electron process management
 export let electronProcess: ChildProcess | null = null;
@@ -330,37 +331,84 @@ export async function sendCommandToElectron(
         javascriptCode = command;
     }
 
-    // Use HTTP-based Runtime.evaluate for simple commands
-    const evaluateUrl = `http://localhost:9222/json/runtime/evaluate`;
-    const evaluateBody = {
-      expression: javascriptCode,
-      returnByValue: true
-    };
-
-    try {
-      const evaluateResponse = await fetch(evaluateUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(evaluateBody)
-      });
-
-      if (evaluateResponse.ok) {
-        const result = await evaluateResponse.json();
-        return `Command executed successfully in "${mainTarget.title}": ${JSON.stringify(result, null, 2)}`;
-      }
-    } catch (httpError) {
-      console.log("HTTP evaluation failed, trying WebSocket approach...");
-    }
-
-    // Enhanced WebSocket approach for more complex commands
+    // Use WebSocket to execute commands via Chrome DevTools Protocol
     const wsUrl = mainTarget.webSocketDebuggerUrl;
     if (!wsUrl) {
       throw new Error("No WebSocket debugger URL available");
     }
 
-    return `Command "${command}" prepared for WebSocket execution in target: ${mainTarget.title || mainTarget.url}\nTarget ID: ${mainTarget.id}\nJavaScript: ${javascriptCode}`;
+    return new Promise((resolve, reject) => {
+      const ws = new WebSocket(wsUrl);
+      const messageId = Math.floor(Math.random() * 1000000); // Use smaller integer ID
+      
+      const timeout = setTimeout(() => {
+        ws.close();
+        reject(new Error("Command execution timeout (10s)"));
+      }, 10000);
+
+      ws.on('open', () => {
+        console.log(`[MCP] Connected to Electron via WebSocket: ${wsUrl}`);
+        
+        // Enable Runtime domain first
+        ws.send(JSON.stringify({
+          id: 1,
+          method: 'Runtime.enable'
+        }));
+        
+        // Send Runtime.evaluate command
+        const message = {
+          id: messageId,
+          method: 'Runtime.evaluate',
+          params: {
+            expression: javascriptCode,
+            returnByValue: true,
+            awaitPromise: false
+          }
+        };
+        
+        console.log(`[MCP] Sending command: ${javascriptCode}`);
+        ws.send(JSON.stringify(message));
+      });
+
+      ws.on('message', (data) => {
+        try {
+          const response = JSON.parse(data.toString());
+          console.log(`[MCP] Received response:`, response);
+          
+          if (response.id === messageId) {
+            clearTimeout(timeout);
+            ws.close();
+            
+            if (response.error) {
+              reject(new Error(`DevTools Protocol error: ${response.error.message}`));
+            } else if (response.result) {
+              const result = response.result.result;
+              if (result.type === 'string') {
+                resolve(`✅ Command executed: ${result.value}`);
+              } else if (result.type === 'undefined') {
+                resolve(`✅ Command executed successfully`);
+              } else {
+                resolve(`✅ Result: ${JSON.stringify(result.value, null, 2)}`);
+              }
+            } else {
+              resolve(`✅ Command sent successfully`);
+            }
+          }
+        } catch (error) {
+          console.error(`[MCP] Failed to parse response:`, error);
+        }
+      });
+
+      ws.on('error', (error) => {
+        console.error(`[MCP] WebSocket error:`, error);
+        clearTimeout(timeout);
+        reject(new Error(`WebSocket error: ${error.message}`));
+      });
+      
+      ws.on('close', (code, reason) => {
+        console.log(`[MCP] WebSocket closed: ${code} ${reason}`);
+      });
+    });
     
   } catch (error) {
     // Fallback to stdin approach (may not work with all apps)
