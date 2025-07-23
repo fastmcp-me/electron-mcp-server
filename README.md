@@ -1,41 +1,48 @@
 # Electron MCP Server
 
-[![GitHub license](https://img.shields.io/github/license/halilural/electron-mcp-server)](https://github.com/halilural/electron-mcp-server/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/halilural/electron-mcp-server)](https://github.com/halilural/electron-mcp-server/blob/master/LICENSE)
 [![npm version](https://img.shields.io/npm/v/electron-mcp-server)](https://www.npmjs.com/package/electron-mcp-server)
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blue)](https://modelcontextprotocol.io)
 
-A Model Context Protocol (MCP) server that provides comprehensive Electron application management and automation capabilities. This server enables AI assistants and LLMs to interact with Electron applications through a standardized interface.
+A powerful Model Context Protocol (MCP) server that provides comprehensive Electron application automation, debugging, and observability capabilities. Supercharge your Electron development workflow with AI-powered automation through Chrome DevTools Protocol integration.
 
-## 🚀 Features
+## 🎯 What Makes This Special
 
-- **Application Lifecycle Management**: Launch, close, and monitor Electron applications
-- **Project Scaffolding**: Create new Electron projects with customizable templates
-- **Build System Integration**: Build applications for multiple platforms and architectures
-- **Process Management**: Monitor and control running Electron processes
-- **Development Tools**: Support for development mode with debugging features
-- **Cross-Platform Support**: Works on Windows, macOS, and Linux
+Transform your Electron development experience with **AI-powered automation**:
+
+- **🔄 Real-time UI Automation**: Click buttons, fill forms, and interact with any Electron app programmatically
+- **📸 Visual Debugging**: Take screenshots and capture application state without interrupting development
+- **🔍 Deep Inspection**: Extract DOM elements, application data, and performance metrics in real-time
+- **⚡ DevTools Protocol Integration**: Universal compatibility with any Electron app - no modifications required
+- **🚀 Development Observability**: Monitor logs, system info, and application behavior seamlessly
+
+## 🚀 Key Features
+
+### 🎮 Application Control & Automation
+- **Launch & Manage**: Start, stop, and monitor Electron applications with full lifecycle control
+- **Interactive Automation**: Execute JavaScript code directly in running applications via WebSocket
+- **UI Testing**: Automate button clicks, form interactions, and user workflows
+- **Process Management**: Track PIDs, monitor resource usage, and handle graceful shutdowns
+
+### 📊 Advanced Observability  
+- **Screenshot Capture**: Non-intrusive visual snapshots using Playwright and Chrome DevTools Protocol
+- **Real-time Logs**: Stream application logs (main process, renderer, console) with filtering
+- **Window Information**: Get detailed window metadata, titles, URLs, and target information
+- **System Monitoring**: Track memory usage, uptime, and performance metrics
+
+### 🛠️ Development Productivity
+- **Universal Compatibility**: Works with any Electron app without requiring code modifications  
+- **DevTools Integration**: Leverage Chrome DevTools Protocol for powerful debugging capabilities
+- **Build Automation**: Cross-platform building for Windows, macOS, and Linux
+- **Environment Management**: Clean environment handling and debugging port configuration
 
 ## 📦 Installation
 
-### Global Installation
+### VS Code Integration (Recommended)
 
-```bash
-npm install -g electron-mcp-server
-```
+[![Install with NPX in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=electron&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22electron-mcp-server%22%5D%7D)
 
-### Local Installation
-
-```bash
-npm install electron-mcp-server
-```
-
-## 🛠️ Usage
-
-### With VS Code
-
-[![Install with NPX in VS Code](https://img.shields.io/badge/VS_Code-NPM-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=electron&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22electron-mcp-server%22%5D%7D)
-
-For manual installation, add the following to your VS Code MCP settings:
+Add to your VS Code MCP settings:
 
 ```json
 {
@@ -50,9 +57,9 @@ For manual installation, add the following to your VS Code MCP settings:
 }
 ```
 
-### With Claude Desktop
+### Claude Desktop Integration
 
-Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -65,209 +72,259 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
 }
 ```
 
-### Direct Usage
+### Global Installation
 
 ```bash
-# Run the server directly
-npx electron-mcp-server
-
-# Or if installed globally
-electron-mcp-server
+npm install -g electron-mcp-server
 ```
 
 ## 🔧 Available Tools
 
 ### `launch_electron_app`
-
-Launch an Electron application from a specified path.
-
-**Parameters:**
-
-- `appPath` (string): Path to the Electron application
-- `args` (array, optional): Additional command line arguments
-- `devMode` (boolean, optional): Launch in development mode with debugging
-
-**Example:**
+Launch an Electron application with debugging capabilities.
 
 ```javascript
 {
-  "appPath": "/path/to/my-electron-app",
-  "devMode": true,
-  "args": ["--enable-logging"]
+  "appPath": "/path/to/electron-app",
+  "devMode": true,  // Enables Chrome DevTools Protocol on port 9222
+  "args": ["--enable-logging", "--dev"]
+}
+```
+
+**Returns**: Process ID and launch confirmation
+
+### `get_electron_window_info`
+Get comprehensive window and target information via Chrome DevTools Protocol.
+
+```javascript
+{
+  "includeChildren": true  // Include child windows and DevTools instances
+}
+```
+
+**Returns**: 
+- Window IDs, titles, URLs, and types
+- DevTools Protocol target information
+- Platform details and process information
+
+### `take_screenshot`
+Capture high-quality screenshots using Playwright and Chrome DevTools Protocol.
+
+```javascript
+{
+  "outputPath": "/path/to/screenshot.png",  // Optional: defaults to temp directory
+  "windowTitle": "My App"  // Optional: target specific window
+}
+```
+
+**Features**:
+- Non-intrusive capture (doesn't bring window to front)
+- Works with any Electron app
+- Fallback to platform-specific tools if needed
+
+### `send_command_to_electron` 
+Execute JavaScript commands in the running Electron application via WebSocket.
+
+```javascript
+{
+  "command": "eval",  // Built-in commands: eval, get_title, get_url, click_button, console_log
+  "args": {
+    "code": "document.querySelector('button').click(); 'Button clicked!'"
+  }
+}
+```
+
+**Built-in Commands**:
+- `get_title`: Get document title
+- `get_url`: Get current URL  
+- `get_body_text`: Extract visible text content
+- `click_button`: Click buttons by selector
+- `console_log`: Send console messages
+- `eval`: Execute custom JavaScript code
+
+### `read_electron_logs`
+Stream application logs from main process, renderer, and console.
+
+```javascript
+{
+  "logType": "all",  // Options: "all", "main", "renderer", "console"
+  "lines": 50,       // Number of recent lines
+  "follow": false    // Stream live logs
 }
 ```
 
 ### `close_electron_app`
-
-Close the currently running Electron application.
-
-**Parameters:**
-
-- `force` (boolean, optional): Force close the application if unresponsive
-
-### `get_electron_info`
-
-Get information about the Electron installation and environment.
-
-**Returns:**
-
-- Electron version
-- Platform information
-- Node.js version
-- Installation status
-
-### `create_electron_project`
-
-Create a new Electron project with a basic structure.
-
-**Parameters:**
-
-- `projectName` (string): Name of the new project
-- `projectPath` (string): Directory where to create the project
-- `template` (string, optional): Project template ("basic", "react", "vue", "angular")
-
-**Example:**
+Gracefully close the Electron application.
 
 ```javascript
 {
-  "projectName": "my-awesome-app",
-  "projectPath": "/Users/username/Projects",
-  "template": "basic"
+  "force": false  // Force kill if unresponsive
 }
 ```
 
 ### `build_electron_app`
+Build Electron applications for distribution.
 
-Build an Electron application for distribution.
+```javascript
+{
+  "projectPath": "/path/to/project",
+  "platform": "darwin",  // win32, darwin, linux  
+  "arch": "x64",         // x64, arm64, ia32
+  "debug": false
+}
+```
 
-**Parameters:**
+## 💡 Usage Examples
 
-- `projectPath` (string): Path to the Electron project
-- `platform` (string, optional): Target platform ("win32", "darwin", "linux")
-- `arch` (string, optional): Target architecture ("x64", "arm64", "ia32")
-- `debug` (boolean, optional): Build in debug mode
+### Automated UI Testing
+```javascript
+// Launch app in development mode
+await launch_electron_app({
+  "appPath": "/path/to/app",
+  "devMode": true
+});
 
-### `get_electron_process_info`
+// Take a screenshot
+await take_screenshot();
 
-Get information about the currently running Electron process.
+// Click a button programmatically  
+await send_command_to_electron({
+  "command": "eval",
+  "args": {
+    "code": "document.querySelector('#submit-btn').click()"
+  }
+});
 
-**Returns:**
+// Verify the result
+await send_command_to_electron({
+  "command": "get_title"
+});
+```
 
-- Process ID (PID)
-- Status
-- Platform
-- Start time
+### Development Debugging
+```javascript
+// Get window information
+const windowInfo = await get_electron_window_info();
 
-### `send_command_to_electron`
+// Extract application data
+await send_command_to_electron({
+  "command": "eval", 
+  "args": {
+    "code": "JSON.stringify(window.appState, null, 2)"
+  }
+});
 
-Send commands to the running Electron application (requires IPC setup).
+// Monitor logs
+await read_electron_logs({
+  "logType": "all",
+  "lines": 100
+});
+```
 
-**Parameters:**
+### Performance Monitoring  
+```javascript
+// Get system information
+await send_command_to_electron({
+  "command": "eval",
+  "args": {
+    "code": "({memory: performance.memory, timing: performance.timing})"
+  }
+});
 
-- `command` (string): Command to send
-- `args` (any, optional): Command arguments
+// Take periodic screenshots for visual regression testing
+await take_screenshot({
+  "outputPath": "/tests/screenshots/current.png"
+});
+```
 
-## 🏗️ Project Templates
+## 🏗️ Architecture
 
-### Basic Template
+### Chrome DevTools Protocol Integration
+- **Universal Compatibility**: Works with any Electron app that has remote debugging enabled
+- **Real-time Communication**: WebSocket-based command execution with the renderer process
+- **No App Modifications**: Zero changes required to target applications
 
-The basic template creates a minimal Electron application with:
+### Process Management
+- **Clean Environment**: Handles `ELECTRON_RUN_AS_NODE` and other environment variables
+- **Resource Tracking**: Monitors PIDs, memory usage, and application lifecycle
+- **Graceful Shutdown**: Proper cleanup and process termination
 
-- Main process (`main.js`)
-- Renderer process (`index.html`)
-- Basic window management
-- Development mode support
-
-### Coming Soon
-
-- **React Template**: Electron + React setup
-- **Vue Template**: Electron + Vue.js setup
-- **Angular Template**: Electron + Angular setup
+### Cross-Platform Support
+- **macOS**: Uses Playwright CDP with screencapture fallback
+- **Windows**: PowerShell-based window detection and capture
+- **Linux**: X11 window management (planned)
 
 ## 🧪 Development
 
 ### Prerequisites
-
 - Node.js 18+
-- npm or yarn
+- TypeScript 4.5+
 - Electron (for testing)
 
 ### Setup
-
 ```bash
-# Clone the repository
 git clone https://github.com/halilural/electron-mcp-server.git
 cd electron-mcp-server
 
-# Install dependencies
 npm install
-
-# Build the project
 npm run build
 
-# Run in development mode
-npm run dev
-```
-
-### Testing
-
-```bash
 # Run tests
 npm test
 
-# Run linting
-npm run lint
-
-# Fix linting issues
-npm run lint:fix
+# Development mode with auto-rebuild
+npm run dev
 ```
 
-## 📝 API Reference
+### Project Structure
+```
+src/
+├── handlers.ts      # MCP tool handlers
+├── index.ts         # Server entry point
+├── tools.ts         # Tool definitions
+├── screenshot.ts    # Screenshot functionality
+├── utils/
+│   ├── process.ts   # Process management & DevTools Protocol
+│   ├── logs.ts      # Log management
+│   └── project.ts   # Project scaffolding
+└── schemas/         # JSON schemas for validation
+```
 
-This server implements the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) specification and provides tools for Electron application management.
+## 🔐 Security & Best Practices
 
-### Error Handling
-
-All tools return standardized error responses when operations fail:
-
-- Missing dependencies (Electron not installed)
-- Invalid paths or parameters
-- Process management errors
-- Build system failures
-
-### Security Considerations
-
-- The server only operates on explicitly provided paths
-- Process management is limited to applications launched through the server
-- Build operations require valid project structures
+- **Sandboxed Execution**: All JavaScript execution is contained within the target Electron app
+- **Path Validation**: Only operates on explicitly provided application paths  
+- **Process Isolation**: Each launched app runs in its own process space
+- **No Persistent Access**: No permanent modifications to target applications
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create a feature branch (`git checkout -b feature/awesome-feature`)
+3. Commit your changes (`git commit -m 'Add awesome feature'`)
+4. Push to the branch (`git push origin feature/awesome-feature`)
 5. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [Model Context Protocol](https://modelcontextprotocol.io) for the standardized interface
-- [Electron](https://electronjs.org) for the desktop application framework
-- The open source community for inspiration and contributions
+- **[Model Context Protocol](https://modelcontextprotocol.io)** - Standardized AI-application interface
+- **[Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/)** - Universal debugging interface
+- **[Playwright](https://playwright.dev)** - Reliable browser automation
+- **[Electron](https://electronjs.org)** - Cross-platform desktop applications
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/halilural/electron-mcp-server)
-- [NPM Package](https://www.npmjs.com/package/electron-mcp-server)
-- [Model Context Protocol](https://modelcontextprotocol.io)
-- [Electron Documentation](https://electronjs.org/docs)
+- **[GitHub Repository](https://github.com/halilural/electron-mcp-server)**
+- **[NPM Package](https://www.npmjs.com/package/electron-mcp-server)**
+- **[Model Context Protocol](https://modelcontextprotocol.io)**
+- **[Chrome DevTools Protocol Docs](https://chromedevtools.github.io/devtools-protocol/)**
 
 ---
 
-**Note**: This MCP server is designed to work with MCP-compatible clients like Claude Desktop, VS Code with MCP support, and other AI assistants that implement the Model Context Protocol.
+**Ready to supercharge your Electron development with AI-powered automation?** Install the MCP server and start building smarter workflows today! 🚀
