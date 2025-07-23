@@ -21,14 +21,20 @@ import { takeScreenshot } from "./screenshot.js";
 import { readElectronLogs } from "./utils/logs.js";
 import { isElectronInstalled } from "./utils/project.js";
 
-export async function handleToolCall(request: z.infer<typeof CallToolRequestSchema>) {
+export async function handleToolCall(
+  request: z.infer<typeof CallToolRequestSchema>
+) {
   const { name, arguments: args } = request.params;
 
   try {
     switch (name) {
       case ToolName.LAUNCH_ELECTRON_APP: {
-        const { appPath, args: launchArgs, devMode } = LaunchElectronAppSchema.parse(args);
-        
+        const {
+          appPath,
+          args: launchArgs,
+          devMode,
+        } = LaunchElectronAppSchema.parse(args);
+
         // Check if Electron is installed
         const electronAvailable = await isElectronInstalled(appPath);
         if (!electronAvailable) {
@@ -57,15 +63,22 @@ export async function handleToolCall(request: z.infer<typeof CallToolRequestSche
       }
 
       case ToolName.BUILD_ELECTRON_APP: {
-        const { projectPath, platform, arch, debug } = BuildElectronAppSchema.parse(args);
-        const result = await buildElectronApp(projectPath, platform, arch, debug);
+        const { projectPath, platform, arch, debug } =
+          BuildElectronAppSchema.parse(args);
+        const result = await buildElectronApp(
+          projectPath,
+          platform,
+          arch,
+          debug
+        );
         return {
           content: [{ type: "text", text: result }],
         };
       }
 
       case ToolName.SEND_COMMAND_TO_ELECTRON: {
-        const { command, args: commandArgs } = SendCommandToElectronSchema.parse(args);
+        const { command, args: commandArgs } =
+          SendCommandToElectronSchema.parse(args);
         const result = await sendCommandToElectron(command, commandArgs);
         return {
           content: [{ type: "text", text: result }],
@@ -75,12 +88,18 @@ export async function handleToolCall(request: z.infer<typeof CallToolRequestSche
       case ToolName.TAKE_SCREENSHOT: {
         const { outputPath, windowTitle } = TakeScreenshotSchema.parse(args);
         const result = await takeScreenshot(outputPath, windowTitle);
+
+        // Read the screenshot file and convert to base64
+        const fs = await import("fs/promises");
+        const imageBuffer = await fs.readFile(result);
+        const base64Image = imageBuffer.toString("base64");
+
         return {
           content: [
             { type: "text", text: `Screenshot saved to: ${result}` },
             {
               type: "image",
-              data: result,
+              data: base64Image,
               mimeType: "image/png",
             },
           ],
@@ -90,23 +109,29 @@ export async function handleToolCall(request: z.infer<typeof CallToolRequestSche
       case ToolName.READ_ELECTRON_LOGS: {
         const { logType, lines, follow } = ReadElectronLogsSchema.parse(args);
         const logs = await readElectronLogs(logType, lines);
-        
+
         if (follow) {
           return {
             content: [
               {
                 type: "text",
-                text: `Following logs (showing last ${lines || 100} lines):\n\n${logs.join("\n")}\n\n[Log following is not implemented in this version - showing current logs only]`,
+                text: `Following logs (showing last ${
+                  lines || 100
+                } lines):\n\n${logs.join(
+                  "\n"
+                )}\n\n[Log following is not implemented in this version - showing current logs only]`,
               },
             ],
           };
         }
-        
+
         return {
           content: [
             {
               type: "text",
-              text: `Electron logs (last ${lines || 100} lines):\n\n${logs.join("\n")}`,
+              text: `Electron logs (last ${lines || 100} lines):\n\n${logs.join(
+                "\n"
+              )}`,
             },
           ],
         };
@@ -141,7 +166,9 @@ export async function handleToolCall(request: z.infer<typeof CallToolRequestSche
       content: [
         {
           type: "text",
-          text: `Error executing ${name}: ${error instanceof Error ? error.message : String(error)}`,
+          text: `Error executing ${name}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         },
       ],
       isError: true,

@@ -2,9 +2,7 @@ const { app, BrowserWindow, ipcMain, Menu, dialog } = require("electron");
 const path = require("path");
 const os = require("os");
 
-// Enable remote debugging for screenshot automation
-app.commandLine.appendSwitch("remote-debugging-port", "9222");
-app.commandLine.appendSwitch("enable-logging");
+// Note: Remote debugging port is set via command line arguments when launched in dev mode
 
 // Enable live reload for development
 if (process.argv.includes("--dev")) {
