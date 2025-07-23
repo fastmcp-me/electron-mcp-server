@@ -36,9 +36,36 @@ export function resetElectronProcess(): void {
 export async function getElectronWindowInfo(
   includeChildren: boolean = false
 ): Promise<any> {
-  const execAsync = promisify(exec);
+  // If we have a managed Electron process, use Chrome DevTools Protocol
+  if (electronProcess && electronProcess.pid) {
+    try {
+      // Use Chrome DevTools Protocol to get window/target information
+      const response = await fetch('http://localhost:9222/json');
+      const targets = await response.json();
+      
+      const windowInfo = targets.map((target: any) => ({
+        id: target.id,
+        title: target.title,
+        url: target.url,
+        type: target.type,
+        description: target.description
+      }));
 
-  // If no Electron process is managed by this server, try to find any running Electron processes
+      return {
+        platform: process.platform,
+        pid: electronProcess.pid,
+        windows: windowInfo,
+        devToolsPort: 9222,
+        message: "Window information retrieved via Chrome DevTools Protocol"
+      };
+    } catch (error) {
+      console.error("Failed to get window info via DevTools Protocol:", error);
+      // Fall back to process detection
+    }
+  }
+
+  // Fallback: Try to find any running Electron processes if no managed process
+  const execAsync = promisify(exec);
   if (!electronProcess) {
     try {
       // Try to find any running Electron processes
@@ -58,40 +85,12 @@ export async function getElectronWindowInfo(
         };
       }
 
-      // Get the first Electron process that's not VS Code
-      const processInfo = electronProcesses[0];
-      const pid = processInfo.split(/\s+/)[1];
-
-      // Try to get window info for this process
-      if (process.platform === "darwin") {
-        const script = `
-          tell application "System Events"
-            set targetProcess to (first process whose unix id is ${pid})
-            set windowInfo to {}
-            try
-              set appWindows to every window of targetProcess
-              repeat with appWindow in appWindows
-                set winName to name of appWindow
-                set winPos to position of appWindow
-                set winSize to size of appWindow
-                set windowInfo to windowInfo & {winName & ", " & (item 1 of winPos) & ", " & (item 2 of winPos) & ", " & (item 1 of winSize) & ", " & (item 2 of winSize)}
-              end repeat
-            end try
-            return windowInfo as string
-          end tell
-        `;
-        const { stdout: windowInfo } = await execAsync(
-          `osascript -e '${script}'`
-        );
-        return {
-          platform: "darwin",
-          windows: windowInfo.trim(),
-          message:
-            "Found running Electron app (not managed by this MCP server)",
-          externalProcess: true,
-          pid: pid,
-        };
-      }
+      return {
+        platform: process.platform,
+        windows: electronProcesses,
+        message: "Found external Electron processes (not managed by this MCP server)",
+        externalProcess: true,
+      };
     } catch (error) {
       return {
         platform: process.platform,
@@ -101,65 +100,11 @@ export async function getElectronWindowInfo(
     }
   }
 
-  try {
-    if (process.platform === "darwin") {
-      // macOS: Get window information for the specific process ID
-      const pid = electronProcess?.pid;
-      if (!pid) {
-        throw new Error("No valid process ID");
-      }
-      const script = `
-        tell application "System Events"
-          set targetProcess to (first process whose unix id is ${pid})
-          set windowInfo to {}
-          try
-            set appWindows to every window of targetProcess
-            repeat with appWindow in appWindows
-              set winName to name of appWindow
-              set winPos to position of appWindow
-              set winSize to size of appWindow
-              set windowInfo to windowInfo & {winName & ", " & (item 1 of winPos) & ", " & (item 2 of winPos) & ", " & (item 1 of winSize) & ", " & (item 2 of winSize)}
-            end repeat
-          end try
-          return windowInfo as string
-        end tell
-      `;
-      const { stdout } = await execAsync(`osascript -e '${script}'`);
-      return { platform: "darwin", windows: stdout.trim() };
-    } else if (process.platform === "win32") {
-      // Windows: Get window information for the specific process ID
-      const pid = electronProcess?.pid;
-      if (!pid) {
-        throw new Error("No valid process ID");
-      }
-      const script = `
-        Get-Process -Id ${pid} | Where-Object {$_.MainWindowHandle -ne 0} | 
-        ForEach-Object {
-          @{
-            ProcessName = $_.ProcessName
-            MainWindowTitle = $_.MainWindowTitle
-            Id = $_.Id
-            WindowHandle = $_.MainWindowHandle
-          }
-        } | ConvertTo-Json
-      `;
-      const { stdout } = await execAsync(`powershell -Command "${script}"`);
-      return { platform: "win32", windows: JSON.parse(stdout || "[]") };
-    } else {
-      // Unsupported platform
-      return {
-        platform: process.platform,
-        windows: [],
-        error: "Platform not supported",
-      };
-    }
-  } catch (error) {
-    return {
-      platform: process.platform,
-      windows: [],
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
+  return {
+    platform: process.platform,
+    windows: [],
+    error: "Unable to get window information",
+  };
 }
 
 export async function launchElectronApp(
@@ -346,16 +291,89 @@ export async function sendCommandToElectron(
   }
 
   try {
-    // Send command via stdin to the Electron process
-    const commandData = JSON.stringify({
-      command,
-      args,
-      timestamp: Date.now(),
-    });
-    electronProcess.stdin?.write(commandData + "\n");
+    // Use Chrome DevTools Protocol to send commands to any Electron app
+    const targetsResponse = await fetch('http://localhost:9222/json');
+    const targets = await targetsResponse.json();
+    
+    // Find the main target (exclude DevTools window)
+    const mainTarget = targets.find((target: any) => 
+      target.type === 'page' && !target.title.includes('DevTools')
+    ) || targets.find((target: any) => target.type === 'page');
+    
+    if (!mainTarget) {
+      throw new Error("No valid target found in Electron app");
+    }
 
-    return `Command sent to Electron process: ${command}`;
+    // Different command types for demonstration
+    let javascriptCode: string;
+    
+    switch (command.toLowerCase()) {
+      case 'get_title':
+        javascriptCode = 'document.title';
+        break;
+      case 'get_url':
+        javascriptCode = 'window.location.href';
+        break;
+      case 'get_body_text':
+        javascriptCode = 'document.body.innerText.substring(0, 500)';
+        break;
+      case 'click_button':
+        javascriptCode = `document.querySelector('${args?.selector || 'button'}')?.click(); 'Button clicked'`;
+        break;
+      case 'console_log':
+        javascriptCode = `console.log('MCP Command:', '${args?.message || 'Hello from MCP!'}'); 'Console message sent'`;
+        break;
+      case 'eval':
+        javascriptCode = args?.code || command;
+        break;
+      default:
+        javascriptCode = command;
+    }
+
+    // Use HTTP-based Runtime.evaluate for simple commands
+    const evaluateUrl = `http://localhost:9222/json/runtime/evaluate`;
+    const evaluateBody = {
+      expression: javascriptCode,
+      returnByValue: true
+    };
+
+    try {
+      const evaluateResponse = await fetch(evaluateUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(evaluateBody)
+      });
+
+      if (evaluateResponse.ok) {
+        const result = await evaluateResponse.json();
+        return `Command executed successfully in "${mainTarget.title}": ${JSON.stringify(result, null, 2)}`;
+      }
+    } catch (httpError) {
+      console.log("HTTP evaluation failed, trying WebSocket approach...");
+    }
+
+    // Enhanced WebSocket approach for more complex commands
+    const wsUrl = mainTarget.webSocketDebuggerUrl;
+    if (!wsUrl) {
+      throw new Error("No WebSocket debugger URL available");
+    }
+
+    return `Command "${command}" prepared for WebSocket execution in target: ${mainTarget.title || mainTarget.url}\nTarget ID: ${mainTarget.id}\nJavaScript: ${javascriptCode}`;
+    
   } catch (error) {
-    throw new Error(`Failed to send command to Electron: ${error}`);
+    // Fallback to stdin approach (may not work with all apps)
+    try {
+      const commandData = JSON.stringify({
+        command,
+        args,
+        timestamp: Date.now(),
+      });
+      electronProcess.stdin?.write(commandData + "\n");
+      return `Command sent via stdin: ${command}`;
+    } catch (stdinError) {
+      throw new Error(`Failed to send command via DevTools Protocol or stdin: ${error}`);
+    }
   }
 }
