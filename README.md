@@ -18,11 +18,13 @@ A Model Context Protocol (MCP) server that provides comprehensive Electron appli
 ## 📦 Installation
 
 ### Global Installation
+
 ```bash
 npm install -g electron-mcp-server
 ```
 
 ### Local Installation
+
 ```bash
 npm install electron-mcp-server
 ```
@@ -76,14 +78,17 @@ electron-mcp-server
 ## 🔧 Available Tools
 
 ### `launch_electron_app`
+
 Launch an Electron application from a specified path.
 
 **Parameters:**
+
 - `appPath` (string): Path to the Electron application
 - `args` (array, optional): Additional command line arguments
 - `devMode` (boolean, optional): Launch in development mode with debugging
 
 **Example:**
+
 ```javascript
 {
   "appPath": "/path/to/my-electron-app",
@@ -93,29 +98,36 @@ Launch an Electron application from a specified path.
 ```
 
 ### `close_electron_app`
+
 Close the currently running Electron application.
 
 **Parameters:**
+
 - `force` (boolean, optional): Force close the application if unresponsive
 
 ### `get_electron_info`
+
 Get information about the Electron installation and environment.
 
 **Returns:**
+
 - Electron version
 - Platform information
 - Node.js version
 - Installation status
 
 ### `create_electron_project`
+
 Create a new Electron project with a basic structure.
 
 **Parameters:**
+
 - `projectName` (string): Name of the new project
 - `projectPath` (string): Directory where to create the project
 - `template` (string, optional): Project template ("basic", "react", "vue", "angular")
 
 **Example:**
+
 ```javascript
 {
   "projectName": "my-awesome-app",
@@ -125,52 +137,63 @@ Create a new Electron project with a basic structure.
 ```
 
 ### `build_electron_app`
+
 Build an Electron application for distribution.
 
 **Parameters:**
+
 - `projectPath` (string): Path to the Electron project
 - `platform` (string, optional): Target platform ("win32", "darwin", "linux")
 - `arch` (string, optional): Target architecture ("x64", "arm64", "ia32")
 - `debug` (boolean, optional): Build in debug mode
 
 ### `get_electron_process_info`
+
 Get information about the currently running Electron process.
 
 **Returns:**
+
 - Process ID (PID)
 - Status
 - Platform
 - Start time
 
 ### `send_command_to_electron`
+
 Send commands to the running Electron application (requires IPC setup).
 
 **Parameters:**
+
 - `command` (string): Command to send
 - `args` (any, optional): Command arguments
 
 ## 🏗️ Project Templates
 
 ### Basic Template
+
 The basic template creates a minimal Electron application with:
+
 - Main process (`main.js`)
 - Renderer process (`index.html`)
 - Basic window management
 - Development mode support
 
 ### Coming Soon
+
 - **React Template**: Electron + React setup
-- **Vue Template**: Electron + Vue.js setup  
+- **Vue Template**: Electron + Vue.js setup
 - **Angular Template**: Electron + Angular setup
 
 ## 🧪 Development
 
 ### Prerequisites
+
 - Node.js 18+
 - npm or yarn
 - Electron (for testing)
 
 ### Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/halilural/electron-mcp-server.git
@@ -187,6 +210,7 @@ npm run dev
 ```
 
 ### Testing
+
 ```bash
 # Run tests
 npm test
@@ -203,13 +227,16 @@ npm run lint:fix
 This server implements the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) specification and provides tools for Electron application management.
 
 ### Error Handling
+
 All tools return standardized error responses when operations fail:
+
 - Missing dependencies (Electron not installed)
 - Invalid paths or parameters
 - Process management errors
 - Build system failures
 
 ### Security Considerations
+
 - The server only operates on explicitly provided paths
 - Process management is limited to applications launched through the server
 - Build operations require valid project structures

@@ -142,8 +142,16 @@ out/
 dist_electron/
 
 # Testing
+test-results/
 coverage/
 .nyc_output/
+
+# Example App
+example-app/node_modules/
+example-app/dist/
+example-app/out/
+example-app/.electron-builder/
+example-app/screenshots/
 
 # IDE
 .vscode/

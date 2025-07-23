@@ -1,0 +1,29 @@
+{
+  "name": "example-electron-app",
+  "version": "1.0.0",
+  "description": "Example Electron application for testing MCP server tools",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.example.electronapp",
+    "productName": "Example Electron App",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules",
+      "!src",
+      "!dist"
+    ]
+  }
+}
