@@ -22,7 +22,13 @@
     "electron",
     "automation",
     "desktop",
-    "model-context-protocol"
+    "model-context-protocol",
+    "devtools",
+    "testing",
+    "ai",
+    "chrome-devtools-protocol",
+    "screenshot",
+    "electron-automation"
   ],
   "author": "Halil Ural",
   "license": "MIT",
