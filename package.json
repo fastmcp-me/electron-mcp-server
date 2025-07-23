@@ -1,0 +1,61 @@
+{
+  "name": "electron-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Electron application automation and management",
+  "main": "dist/index.js",
+  "bin": {
+    "electron-mcp-server": "./dist/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "watch": "tsc --watch",
+    "prepare": "npm run build",
+    "test": "node test.js",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix"
+  },
+  "keywords": [
+    "mcp",
+    "electron",
+    "automation",
+    "desktop",
+    "model-context-protocol"
+  ],
+  "author": "Halil Ural",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.22.4",
+    "zod-to-json-schema": "^3.22.4",
+    "electron": "^28.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/halilural/electron-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/halilural/electron-mcp-server/issues"
+  },
+  "homepage": "https://github.com/halilural/electron-mcp-server#readme"
+}
