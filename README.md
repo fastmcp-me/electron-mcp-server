@@ -259,7 +259,14 @@ await take_screenshot({
 ### Prerequisites
 - Node.js 18+
 - TypeScript 4.5+
-- Electron (for testing)
+- **Electron** - Required for running and testing Electron applications
+  ```bash
+  # Install Electron globally (recommended)
+  npm install -g electron
+  
+  # Or install locally in your project
+  npm install electron --save-dev
+  ```
 
 ### Setup
 ```bash
