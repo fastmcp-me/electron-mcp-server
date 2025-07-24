@@ -268,6 +268,31 @@ await take_screenshot({
   npm install electron --save-dev
   ```
 
+### Target Application Setup
+
+For the MCP server to work with your Electron application, you need to enable remote debugging. Add this code to your Electron app's main process:
+
+```javascript
+const { app } = require('electron');
+const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
+
+// Enable remote debugging in development mode
+if (isDev) {
+  app.commandLine.appendSwitch('remote-debugging-port', '9222');
+}
+```
+
+**Alternative approaches:**
+```bash
+# Launch your app with debugging enabled
+electron . --remote-debugging-port=9222
+
+# Or via npm script
+npm run dev -- --remote-debugging-port=9222
+```
+
+**Note:** The MCP server automatically scans ports 9222-9225 to detect running Electron applications with remote debugging enabled.
+
 ### Setup
 ```bash
 git clone https://github.com/halilural/electron-mcp-server.git
