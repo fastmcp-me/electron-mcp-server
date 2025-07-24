@@ -1,10 +1,10 @@
 {
   "name": "electron-mcp-server",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "MCP server for Electron application automation and management",
   "main": "dist/index.js",
   "bin": {
-    "electron-mcp-server": "./dist/index.js"
+    "electron-mcp-server": "dist/index.js"
   },
   "type": "module",
   "scripts": {
@@ -63,7 +63,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/halilural/electron-mcp-server.git"
+    "url": "git+https://github.com/halilural/electron-mcp-server.git"
   },
   "bugs": {
     "url": "https://github.com/halilural/electron-mcp-server/issues"
