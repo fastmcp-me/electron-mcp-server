@@ -6,7 +6,8 @@ vitest.config.ts
 # Development files
 .vscode/
 test/
-example-app/
+example-app
+example-app-2
 tools/
 
 # Test and debug files

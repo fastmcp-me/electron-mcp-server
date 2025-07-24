@@ -147,11 +147,8 @@ coverage/
 .nyc_output/
 
 # Example App
-example-app/node_modules/
-example-app/dist/
-example-app/out/
-example-app/.electron-builder/
-example-app/screenshots/
+example-app
+example-app-2
 
 # IDE
 .vscode/
@@ -162,4 +159,3 @@ example-app/screenshots/
 # OS
 .DS_Store
 Thumbs.db
-example-app-2/
