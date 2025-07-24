@@ -1,4 +1,4 @@
-import { getElectronLogs } from "./process.js";
+import { getElectronLogs } from "./electron-process.js";
 
 // Helper function to read Electron logs
 export async function readElectronLogs(

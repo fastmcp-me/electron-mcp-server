@@ -19,19 +19,22 @@ Transform your Electron development experience with **AI-powered automation**:
 ## 🚀 Key Features
 
 ### 🎮 Application Control & Automation
+
 - **Launch & Manage**: Start, stop, and monitor Electron applications with full lifecycle control
 - **Interactive Automation**: Execute JavaScript code directly in running applications via WebSocket
 - **UI Testing**: Automate button clicks, form interactions, and user workflows
 - **Process Management**: Track PIDs, monitor resource usage, and handle graceful shutdowns
 
-### 📊 Advanced Observability  
+### 📊 Advanced Observability
+
 - **Screenshot Capture**: Non-intrusive visual snapshots using Playwright and Chrome DevTools Protocol
 - **Real-time Logs**: Stream application logs (main process, renderer, console) with filtering
 - **Window Information**: Get detailed window metadata, titles, URLs, and target information
 - **System Monitoring**: Track memory usage, uptime, and performance metrics
 
 ### 🛠️ Development Productivity
-- **Universal Compatibility**: Works with any Electron app without requiring code modifications  
+
+- **Universal Compatibility**: Works with any Electron app without requiring code modifications
 - **DevTools Integration**: Leverage Chrome DevTools Protocol for powerful debugging capabilities
 - **Build Automation**: Cross-platform building for Windows, macOS, and Linux
 - **Environment Management**: Clean environment handling and debugging port configuration
@@ -81,6 +84,7 @@ npm install -g electron-mcp-server
 ## 🔧 Available Tools
 
 ### `launch_electron_app`
+
 Launch an Electron application with debugging capabilities.
 
 ```javascript
@@ -94,6 +98,7 @@ Launch an Electron application with debugging capabilities.
 **Returns**: Process ID and launch confirmation
 
 ### `get_electron_window_info`
+
 Get comprehensive window and target information via Chrome DevTools Protocol.
 
 ```javascript
@@ -102,12 +107,14 @@ Get comprehensive window and target information via Chrome DevTools Protocol.
 }
 ```
 
-**Returns**: 
+**Returns**:
+
 - Window IDs, titles, URLs, and types
 - DevTools Protocol target information
 - Platform details and process information
 
 ### `take_screenshot`
+
 Capture high-quality screenshots using Playwright and Chrome DevTools Protocol.
 
 ```javascript
@@ -118,11 +125,13 @@ Capture high-quality screenshots using Playwright and Chrome DevTools Protocol.
 ```
 
 **Features**:
+
 - Non-intrusive capture (doesn't bring window to front)
 - Works with any Electron app
 - Fallback to platform-specific tools if needed
 
-### `send_command_to_electron` 
+### `send_command_to_electron`
+
 Execute JavaScript commands in the running Electron application via WebSocket.
 
 ```javascript
@@ -134,15 +143,24 @@ Execute JavaScript commands in the running Electron application via WebSocket.
 }
 ```
 
-**Built-in Commands**:
+**Enhanced UI Interaction Commands**:
+
+- `find_elements`: Analyze all interactive UI elements with their properties and positions
+- `click_by_text`: Click elements by their visible text, aria-label, or title (more reliable than selectors)
+- `fill_input`: Fill input fields by selector, placeholder text, or associated label text
+- `select_option`: Select dropdown options by value or visible text
+- `get_page_structure`: Get organized overview of all page elements (buttons, inputs, selects, links)
 - `get_title`: Get document title
-- `get_url`: Get current URL  
+- `get_url`: Get current URL
 - `get_body_text`: Extract visible text content
-- `click_button`: Click buttons by selector
+- `click_button`: Click buttons by CSS selector (basic method)
 - `console_log`: Send console messages
 - `eval`: Execute custom JavaScript code
 
+**Recommended workflow**: Use `get_page_structure` first to understand available elements, then use specific interaction commands like `click_by_text` or `fill_input`.
+
 ### `read_electron_logs`
+
 Stream application logs from main process, renderer, and console.
 
 ```javascript
@@ -154,6 +172,7 @@ Stream application logs from main process, renderer, and console.
 ```
 
 ### `close_electron_app`
+
 Gracefully close the Electron application.
 
 ```javascript
@@ -163,12 +182,13 @@ Gracefully close the Electron application.
 ```
 
 ### `build_electron_app`
+
 Build Electron applications for distribution.
 
 ```javascript
 {
   "projectPath": "/path/to/project",
-  "platform": "darwin",  // win32, darwin, linux  
+  "platform": "darwin",  // win32, darwin, linux
   "arch": "x64",         // x64, arm64, ia32
   "debug": false
 }
@@ -176,80 +196,152 @@ Build Electron applications for distribution.
 
 ## 💡 Usage Examples
 
+### Smart UI Interaction Workflow
+
+```javascript
+// 1. First, understand the page structure
+await send_command_to_electron({
+  command: "get_page_structure",
+});
+
+// 2. Click a button by its text (much more reliable than selectors)
+await send_command_to_electron({
+  command: "click_by_text",
+  args: {
+    text: "Login", // Finds buttons containing "Login" in text, aria-label, or title
+  },
+});
+
+// 3. Fill inputs by their label or placeholder text
+await send_command_to_electron({
+  command: "fill_input",
+  args: {
+    text: "username", // Finds input with label "Username" or placeholder "Enter username"
+    value: "john.doe@example.com",
+  },
+});
+
+await send_command_to_electron({
+  command: "fill_input",
+  args: {
+    text: "password",
+    value: "secretpassword",
+  },
+});
+
+// 4. Select dropdown options by visible text
+await send_command_to_electron({
+  command: "select_option",
+  args: {
+    text: "country", // Finds select with label containing "country"
+    value: "United States", // Selects option with this text
+  },
+});
+
+// 5. Take a screenshot to verify the result
+await take_screenshot();
+```
+
+### Advanced Element Detection
+
+```javascript
+// Find all interactive elements with detailed information
+await send_command_to_electron({
+  command: "find_elements",
+});
+
+// This returns detailed info about every clickable element and input:
+// {
+//   "type": "clickable",
+//   "text": "Submit Form",
+//   "id": "submit-btn",
+//   "className": "btn btn-primary",
+//   "ariaLabel": "Submit the registration form",
+//   "position": { "x": 100, "y": 200, "width": 120, "height": 40 },
+//   "visible": true
+// }
+```
+
 ### Automated UI Testing
+
 ```javascript
 // Launch app in development mode
 await launch_electron_app({
-  "appPath": "/path/to/app",
-  "devMode": true
+  appPath: "/path/to/app",
+  devMode: true,
 });
 
 // Take a screenshot
 await take_screenshot();
 
-// Click a button programmatically  
+// Click a button programmatically
 await send_command_to_electron({
-  "command": "eval",
-  "args": {
-    "code": "document.querySelector('#submit-btn').click()"
-  }
+  command: "eval",
+  args: {
+    code: "document.querySelector('#submit-btn').click()",
+  },
 });
 
 // Verify the result
 await send_command_to_electron({
-  "command": "get_title"
+  command: "get_title",
 });
 ```
 
 ### Development Debugging
+
 ```javascript
 // Get window information
 const windowInfo = await get_electron_window_info();
 
 // Extract application data
 await send_command_to_electron({
-  "command": "eval", 
-  "args": {
-    "code": "JSON.stringify(window.appState, null, 2)"
-  }
+  command: "eval",
+  args: {
+    code: "JSON.stringify(window.appState, null, 2)",
+  },
 });
 
 // Monitor logs
 await read_electron_logs({
-  "logType": "all",
-  "lines": 100
+  logType: "all",
+  lines: 100,
 });
 ```
 
-### Performance Monitoring  
+### Performance Monitoring
+
 ```javascript
 // Get system information
 await send_command_to_electron({
-  "command": "eval",
-  "args": {
-    "code": "({memory: performance.memory, timing: performance.timing})"
-  }
+  command: "eval",
+  args: {
+    code: "({memory: performance.memory, timing: performance.timing})",
+  },
 });
 
 // Take periodic screenshots for visual regression testing
 await take_screenshot({
-  "outputPath": "/tests/screenshots/current.png"
+  outputPath: "/tests/screenshots/current.png",
 });
 ```
 
 ## 🏗️ Architecture
 
 ### Chrome DevTools Protocol Integration
+
 - **Universal Compatibility**: Works with any Electron app that has remote debugging enabled
 - **Real-time Communication**: WebSocket-based command execution with the renderer process
 - **No App Modifications**: Zero changes required to target applications
 
 ### Process Management
+
 - **Clean Environment**: Handles `ELECTRON_RUN_AS_NODE` and other environment variables
 - **Resource Tracking**: Monitors PIDs, memory usage, and application lifecycle
 - **Graceful Shutdown**: Proper cleanup and process termination
 
 ### Cross-Platform Support
+
 - **macOS**: Uses Playwright CDP with screencapture fallback
 - **Windows**: PowerShell-based window detection and capture
 - **Linux**: X11 window management (planned)
@@ -257,13 +349,15 @@ await take_screenshot({
 ## 🧪 Development
 
 ### Prerequisites
+
 - Node.js 18+
 - TypeScript 4.5+
 - **Electron** - Required for running and testing Electron applications
+
   ```bash
   # Install Electron globally (recommended)
   npm install -g electron
-  
+
   # Or install locally in your project
   npm install electron --save-dev
   ```
@@ -273,16 +367,18 @@ await take_screenshot({
 For the MCP server to work with your Electron application, you need to enable remote debugging. Add this code to your Electron app's main process:
 
 ```javascript
-const { app } = require('electron');
-const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
+const { app } = require("electron");
+const isDev =
+  process.env.NODE_ENV === "development" || process.argv.includes("--dev");
 
 // Enable remote debugging in development mode
 if (isDev) {
-  app.commandLine.appendSwitch('remote-debugging-port', '9222');
+  app.commandLine.appendSwitch("remote-debugging-port", "9222");
 }
 ```
 
 **Alternative approaches:**
+
 ```bash
 # Launch your app with debugging enabled
 electron . --remote-debugging-port=9222
@@ -294,6 +390,7 @@ npm run dev -- --remote-debugging-port=9222
 **Note:** The MCP server automatically scans ports 9222-9225 to detect running Electron applications with remote debugging enabled.
 
 ### Setup
+
 ```bash
 git clone https://github.com/halilural/electron-mcp-server.git
 cd electron-mcp-server
@@ -309,6 +406,7 @@ npm run dev
 ```
 
 ### Project Structure
+
 ```
 src/
 ├── handlers.ts      # MCP tool handlers
@@ -325,7 +423,7 @@ src/
 ## 🔐 Security & Best Practices
 
 - **Sandboxed Execution**: All JavaScript execution is contained within the target Electron app
-- **Path Validation**: Only operates on explicitly provided application paths  
+- **Path Validation**: Only operates on explicitly provided application paths
 - **Process Isolation**: Each launched app runs in its own process space
 - **No Persistent Access**: No permanent modifications to target applications
 

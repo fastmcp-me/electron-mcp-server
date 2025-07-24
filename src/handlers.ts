@@ -7,11 +7,9 @@ import {
   ReadElectronLogsSchema,
   GetElectronWindowInfoSchema,
 } from "./schemas.js";
-import {
-  sendCommandToElectron,
-  getElectronWindowInfo,
-  readElectronLogs,
-} from "./utils/process.js";
+import { sendCommandToElectron } from "./utils/electron-enhanced-commands.js";
+import { getElectronWindowInfo } from "./utils/electron-discovery.js";
+import { readElectronLogs } from "./utils/electron-logs.js";
 import { takeScreenshot } from "./screenshot.js";
 
 export async function handleToolCall(
