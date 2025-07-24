@@ -343,6 +343,14 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
+## ☕ Support
+
+If this project helped you, consider buying me a coffee! ☕
+
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/halilural)
+
+Your support helps me maintain and improve this project. Thank you! 🙏
+
 ## 🙏 Acknowledgments
 
 - **[Model Context Protocol](https://modelcontextprotocol.io)** - Standardized AI-application interface
