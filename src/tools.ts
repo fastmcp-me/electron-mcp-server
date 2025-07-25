@@ -36,8 +36,11 @@ export const tools = [
 Enhanced UI interaction commands:
 - 'find_elements': Analyze all interactive elements (buttons, inputs, selects) with their properties
 - 'click_by_text': Click elements by their visible text, aria-label, or title
+- 'click_by_selector': Securely click elements by CSS selector
 - 'fill_input': Fill input fields by selector, placeholder text, or associated label
 - 'select_option': Select dropdown options by value or text
+- 'send_keyboard_shortcut': Send keyboard shortcuts like 'Ctrl+N', 'Meta+N', 'Enter', 'Escape'
+- 'navigate_to_hash': Safely navigate to hash routes (e.g., '#create', '#settings')
 - 'get_page_structure': Get organized overview of page elements (buttons, inputs, selects, links)
 - 'debug_elements': Get debugging info about buttons and form elements on the page
 - 'verify_form_state': Check current form state and validation status

@@ -103,6 +103,131 @@ export async function sendCommandToElectron(
         javascriptCode = generateClickByTextCommand(args?.text || "");
         break;
 
+      case "click_by_selector":
+        // Secure selector-based clicking
+        const clickSelector = args?.selector || "";
+        if (clickSelector.includes("javascript:") || clickSelector.includes("<script")) {
+          return "Invalid selector: contains dangerous content";
+        }
+        const escapedClickSelector = JSON.stringify(clickSelector);
+        
+        javascriptCode = `
+          (function() {
+            try {
+              const element = document.querySelector(${escapedClickSelector});
+              if (element) {
+                // Check if element is clickable
+                const rect = element.getBoundingClientRect();
+                if (rect.width === 0 || rect.height === 0) {
+                  return 'Element not visible';
+                }
+                
+                // Prevent rapid clicks
+                const clickKey = 'mcp_selector_click_' + btoa(${escapedClickSelector}).slice(0, 10);
+                if (window[clickKey] && Date.now() - window[clickKey] < 1000) {
+                  return 'Click prevented - too soon after previous click';
+                }
+                window[clickKey] = Date.now();
+                
+                // Focus and click
+                element.focus();
+                const event = new MouseEvent('click', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window
+                });
+                element.dispatchEvent(event);
+                
+                return 'Successfully clicked element: ' + element.tagName + 
+                       (element.textContent ? ' - "' + element.textContent.substring(0, 50) + '"' : '');
+              }
+              return 'Element not found: ' + ${escapedClickSelector};
+            } catch (e) {
+              return 'Error clicking element: ' + e.message;
+            }
+          })();
+        `;
+        break;
+
+      case "send_keyboard_shortcut":
+        // Secure keyboard shortcut sending
+        const key = args?.text || "";
+        const validKeys = ['Enter', 'Escape', 'Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+        const validModifiers = ['ctrlKey', 'shiftKey', 'altKey', 'metaKey'];
+        
+        // Parse shortcut like "Ctrl+N" or "Meta+N"
+        const parts = key.split('+').map(p => p.trim());
+        const keyPart = parts[parts.length - 1];
+        const modifiers = parts.slice(0, -1);
+        
+        if (keyPart.length === 1 || validKeys.includes(keyPart)) {
+          const modifierProps = modifiers.map(mod => {
+            switch(mod.toLowerCase()) {
+              case 'ctrl': return 'ctrlKey: true';
+              case 'shift': return 'shiftKey: true';
+              case 'alt': return 'altKey: true';
+              case 'meta': case 'cmd': return 'metaKey: true';
+              default: return '';
+            }
+          }).filter(Boolean).join(', ');
+          
+          javascriptCode = `
+            (function() {
+              try {
+                const event = new KeyboardEvent('keydown', {
+                  key: '${keyPart}',
+                  code: 'Key${keyPart.toUpperCase()}',
+                  ${modifierProps},
+                  bubbles: true,
+                  cancelable: true
+                });
+                document.dispatchEvent(event);
+                return 'Keyboard shortcut sent: ${key}';
+              } catch (e) {
+                return 'Error sending shortcut: ' + e.message;
+              }
+            })();
+          `;
+        } else {
+          return `Invalid key: ${keyPart}. Use single characters or: ${validKeys.join(', ')}`;
+        }
+        break;
+
+      case "navigate_to_hash":
+        // Secure hash navigation
+        const hash = args?.text || "";
+        if (hash.includes("javascript:") || hash.includes("<script") || hash.includes("://")) {
+          return "Invalid hash: contains dangerous content";
+        }
+        const cleanHash = hash.startsWith('#') ? hash : '#' + hash;
+        
+        javascriptCode = `
+          (function() {
+            try {
+              // Use pushState for safer navigation
+              if (window.history && window.history.pushState) {
+                const newUrl = window.location.pathname + window.location.search + '${cleanHash}';
+                window.history.pushState({}, '', newUrl);
+                
+                // Trigger hashchange event for React Router
+                window.dispatchEvent(new HashChangeEvent('hashchange', {
+                  newURL: window.location.href,
+                  oldURL: window.location.href.replace('${cleanHash}', '')
+                }));
+                
+                return 'Navigated to hash: ${cleanHash}';
+              } else {
+                // Fallback to direct assignment
+                window.location.hash = '${cleanHash}';
+                return 'Navigated to hash (fallback): ${cleanHash}';
+              }
+            } catch (e) {
+              return 'Error navigating: ' + e.message;
+            }
+          })();
+        `;
+        break;
+
       case "fill_input":
         javascriptCode = generateFillInputCommand(
           args?.selector || "",

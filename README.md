@@ -16,7 +16,60 @@ Transform your Electron development experience with **AI-powered automation**:
 - **⚡ DevTools Protocol Integration**: Universal compatibility with any Electron app - no modifications required
 - **🚀 Development Observability**: Monitor logs, system info, and application behavior seamlessly
 
-## �️ Security Features
+## 🔒 Security & Configuration
+
+**Configurable security levels** to balance safety with functionality:
+
+### Security Levels
+
+- **🔒 STRICT**: Maximum security for production environments
+- **⚖️ BALANCED**: Default security with safe UI interactions (recommended)
+- **🔓 PERMISSIVE**: More functionality for trusted environments
+- **🛠️ DEVELOPMENT**: Minimal restrictions for development/testing
+
+### Quick Setup
+
+```bash
+# Set security level via environment variable
+export MCP_SECURITY_LEVEL=balanced  # strict|balanced|permissive|development
+
+# Or use the interactive configuration script
+./scripts/configure-security.sh
+```
+
+### Secure UI Interaction Commands
+
+Instead of raw JavaScript eval, use these secure commands:
+
+```javascript
+// ✅ Secure button clicking
+{
+  "command": "click_by_text",
+  "args": { "text": "Create New Encyclopedia" }
+}
+
+// ✅ Secure element selection
+{
+  "command": "click_by_selector", 
+  "args": { "selector": "button[title='Create']" }
+}
+
+// ✅ Secure keyboard shortcuts
+{
+  "command": "send_keyboard_shortcut",
+  "args": { "text": "Ctrl+N" }
+}
+
+// ✅ Secure navigation
+{
+  "command": "navigate_to_hash",
+  "args": { "text": "create" }
+}
+```
+
+See [SECURITY_CONFIG.md](./SECURITY_CONFIG.md) for detailed security documentation.
+
+## 🛠️ Security Features
 
 **Enterprise-grade security** built for safe AI-powered automation:
 

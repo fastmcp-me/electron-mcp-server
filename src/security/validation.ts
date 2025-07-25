@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { logger } from "../utils/logger.js";
+import { SecurityLevel, SECURITY_PROFILES, detectSecurityLevel } from "./config.js";
 
 // Input validation schemas
 export const SecureCommandSchema = z.object({
@@ -39,6 +40,17 @@ export interface ValidationResult {
 }
 
 export class InputValidator {
+  private static securityLevel: SecurityLevel = detectSecurityLevel();
+  
+  static setSecurityLevel(level: SecurityLevel) {
+    this.securityLevel = level;
+    logger.info(`Security level changed to: ${level}`);
+  }
+  
+  static getSecurityLevel(): SecurityLevel {
+    return this.securityLevel;
+  }
+
   private static readonly DANGEROUS_KEYWORDS = [
     "Function",
     "constructor",
@@ -233,6 +245,7 @@ export class InputValidator {
   } {
     const errors: string[] = [];
     const riskFactors: string[] = [];
+    const profile = SECURITY_PROFILES[this.securityLevel];
 
     // Allow simple safe operations
     const safePatterns = [
@@ -244,8 +257,28 @@ export class InputValidator {
       /^[\w\.\[\]'"]+$/, // Simple property access
     ];
 
+    // Allow DOM queries based on security level
+    const domQueryPatterns = profile.allowDOMQueries ? [
+      /^document\.querySelector\([^)]+\)$/, // Simple querySelector without function calls
+      /^document\.querySelectorAll\([^)]+\)$/, // Simple querySelectorAll
+      /^document\.getElementById\([^)]+\)$/, // getElementById
+      /^document\.getElementsByClassName\([^)]+\)$/, // getElementsByClassName
+      /^document\.getElementsByTagName\([^)]+\)$/, // getElementsByTagName
+      /^document\.activeElement$/, // Check active element
+    ] : [];
+
+    // Allow UI interactions based on security level
+    const uiInteractionPatterns = profile.allowUIInteractions ? [
+      /^window\.getComputedStyle\([^)]+\)$/, // Get computed styles
+      /^[\w\.]+\.(textContent|innerText|innerHTML|value|checked|selected|disabled|hidden)$/, // Property access
+      /^[\w\.]+\.(clientWidth|clientHeight|offsetWidth|offsetHeight|getBoundingClientRect)$/, // Size/position
+      /^[\w\.]+\.(focus|blur|scrollIntoView)\(\)$/, // UI methods
+    ] : [];
+
     // Check if it's a safe pattern
-    const isSafe = safePatterns.some((pattern) => pattern.test(code.trim()));
+    const isSafe = safePatterns.some((pattern) => pattern.test(code.trim())) ||
+                   domQueryPatterns.some((pattern) => pattern.test(code.trim())) ||
+                   uiInteractionPatterns.some((pattern) => pattern.test(code.trim()));
 
     if (!isSafe) {
       // Check for dangerous keywords in eval content
@@ -257,14 +290,26 @@ export class InputValidator {
         }
       }
 
-      // Check for function calls that might be dangerous
-      if (/\(\s*\)|\w+\s*\(/.test(code)) {
-        errors.push(`Function calls in eval are restricted`);
-        riskFactors.push("eval_function_call");
+      // Check for function calls based on security profile
+      const hasFunctionCall = /\(\s*\)|\w+\s*\(/.test(code);
+      if (hasFunctionCall) {
+        // Extract function name
+        const functionMatch = code.match(/(\w+)\s*\(/);
+        const functionName = functionMatch ? functionMatch[1] : '';
+        
+        // Check if function is allowed
+        const isAllowedFunction = profile.allowFunctionCalls.includes('*') ||
+                                profile.allowFunctionCalls.some(allowed => 
+                                  functionName.includes(allowed) || code.includes(allowed + '('));
+        
+        if (!isAllowedFunction) {
+          errors.push(`Function calls in eval are restricted (${functionName})`);
+          riskFactors.push("eval_function_call");
+        }
       }
 
-      // Check for assignment operations
-      if (/=(?!=)/.test(code)) {
+      // Check for assignment operations based on security profile
+      if (/=(?!=)/.test(code) && !profile.allowAssignments) {
         errors.push(`Assignment operations in eval are restricted`);
         riskFactors.push("eval_assignment");
       }

@@ -3,6 +3,7 @@ import { InputValidator, ValidationResult } from "./validation.js";
 import { securityLogger, AuditLogEntry } from "./audit.js";
 import { randomUUID } from "crypto";
 import { logger } from "../utils/logger.js";
+import { SecurityLevel, getSecurityConfig, detectSecurityLevel } from "./config.js";
 
 export interface SecurityConfig {
   enableSandbox: boolean;
@@ -35,8 +36,12 @@ export interface SecureExecutionResult {
 export class SecurityManager {
   private config: SecurityConfig;
   private sandbox: CodeSandbox;
+  private securityLevel: SecurityLevel;
 
-  constructor(config: Partial<SecurityConfig> = {}) {
+  constructor(config: Partial<SecurityConfig> = {}, securityLevel?: SecurityLevel) {
+    this.securityLevel = securityLevel || detectSecurityLevel();
+    const defaultConfig = getSecurityConfig(this.securityLevel);
+    
     this.config = {
       enableSandbox: true,
       enableInputValidation: true,
@@ -45,15 +50,37 @@ export class SecurityManager {
       defaultRiskThreshold: "medium",
       sandboxTimeout: 5000,
       maxExecutionTime: 30000,
+      ...defaultConfig,
       ...config,
     };
+
+    // Set the security level in the validator
+    InputValidator.setSecurityLevel(this.securityLevel);
 
     this.sandbox = new CodeSandbox({
       timeout: this.config.sandboxTimeout,
       maxMemory: 50 * 1024 * 1024, // 50MB
     });
 
-    logger.info("Security Manager initialized with config:", this.config);
+    logger.info("Security Manager initialized with config:", {
+      ...this.config,
+      securityLevel: this.securityLevel
+    });
+  }
+
+  setSecurityLevel(level: SecurityLevel) {
+    this.securityLevel = level;
+    InputValidator.setSecurityLevel(level);
+    
+    // Update config based on new security level
+    const newConfig = getSecurityConfig(level);
+    this.config = { ...this.config, ...newConfig };
+    
+    logger.info(`Security level updated to: ${level}`);
+  }
+
+  getSecurityLevel(): SecurityLevel {
+    return this.securityLevel;
   }
 
   async executeSecurely(
