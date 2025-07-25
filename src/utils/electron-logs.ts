@@ -69,8 +69,21 @@ async function getConsoleLogsViaDevTools(
         }
       });
 
-      // Set timeout for non-follow mode
+      // For non-follow mode, try to get console history first
       if (!follow) {
+        // Request console API calls from Runtime
+        ws.send(
+          JSON.stringify({
+            id: 99,
+            method: "Runtime.evaluate",
+            params: {
+              expression: `console.log("Reading console history for MCP test"); "History checked"`,
+              includeCommandLineAPI: true,
+            },
+          })
+        );
+
+        // Wait longer for logs to be captured and history to be available
         setTimeout(() => {
           ws.close();
           resolve(
@@ -78,7 +91,7 @@ async function getConsoleLogsViaDevTools(
               ? logs.slice(-lines).join("\n")
               : "No console logs available"
           );
-        }, 5000);
+        }, 7000); // Increased timeout to 7 seconds
       }
     } catch (error) {
       reject(error);

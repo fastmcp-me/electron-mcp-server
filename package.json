@@ -20,6 +20,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:security": "npm run build && node test/security-test.js",
+    "test:clean": "tsx -e \"import('./test/utils/cleanup.js').then(m => m.TestCleanup.cleanup())\"",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"
   },
@@ -41,6 +42,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@types/ws": "^8.18.1",
+    "dotenv": "^17.2.1",
     "electron": "^28.0.0",
     "playwright": "^1.54.1",
     "ws": "^8.18.3",

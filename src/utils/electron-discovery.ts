@@ -33,7 +33,31 @@ export interface ElectronWindowResult {
 export async function scanForElectronApps(): Promise<ElectronAppInfo[]> {
   logger.debug("Scanning for running Electron applications...");
 
-  const commonPorts = [9222, 9223, 9224, 9225];
+  // Extended port range to include test apps and common custom ports
+  const commonPorts = [
+    9222,
+    9223,
+    9224,
+    9225, // Default ports
+    9200,
+    9201,
+    9202,
+    9203,
+    9204,
+    9205, // Security test range
+    9300,
+    9301,
+    9302,
+    9303,
+    9304,
+    9305, // Integration test range
+    9400,
+    9401,
+    9402,
+    9403,
+    9404,
+    9405, // Additional range
+  ];
   const foundApps: ElectronAppInfo[] = [];
 
   for (const port of commonPorts) {

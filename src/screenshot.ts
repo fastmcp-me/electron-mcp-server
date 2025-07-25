@@ -10,23 +10,25 @@ try {
   if (!process.env.SCREENSHOT_ENCRYPTION_KEY) {
     throw new Error(
       "SCREENSHOT_ENCRYPTION_KEY environment variable is required but not set. " +
-      "Please set this variable to a secure 32-byte hex string. " +
-      "Generate one with: openssl rand -hex 32"
+        "Please set this variable to a secure 32-byte hex string. " +
+        "Generate one with: openssl rand -hex 32"
     );
   }
-  
-  if (process.env.SCREENSHOT_ENCRYPTION_KEY === "default-screenshot-key-change-me") {
+
+  if (
+    process.env.SCREENSHOT_ENCRYPTION_KEY === "default-screenshot-key-change-me"
+  ) {
     throw new Error(
       "SCREENSHOT_ENCRYPTION_KEY is set to the default value. " +
-      "Please set this variable to a secure 32-byte hex string. " +
-      "Generate one with: openssl rand -hex 32"
+        "Please set this variable to a secure 32-byte hex string. " +
+        "Generate one with: openssl rand -hex 32"
     );
   }
-  
+
   if (process.env.SCREENSHOT_ENCRYPTION_KEY.length < 32) {
     throw new Error(
       "SCREENSHOT_ENCRYPTION_KEY must be at least 32 characters long for security. " +
-      "Generate a secure key with: openssl rand -hex 32"
+        "Generate a secure key with: openssl rand -hex 32"
     );
   }
 } catch (error) {
@@ -106,23 +108,25 @@ function validateEnvironmentVariables(): void {
   if (!process.env.SCREENSHOT_ENCRYPTION_KEY) {
     throw new Error(
       "SCREENSHOT_ENCRYPTION_KEY environment variable is required but not set. " +
-      "Please set this variable to a secure 32-byte hex string. " +
-      "Generate one with: openssl rand -hex 32"
+        "Please set this variable to a secure 32-byte hex string. " +
+        "Generate one with: openssl rand -hex 32"
     );
   }
-  
-  if (process.env.SCREENSHOT_ENCRYPTION_KEY === "default-screenshot-key-change-me") {
+
+  if (
+    process.env.SCREENSHOT_ENCRYPTION_KEY === "default-screenshot-key-change-me"
+  ) {
     throw new Error(
       "SCREENSHOT_ENCRYPTION_KEY is set to the default value. " +
-      "Please set this variable to a secure 32-byte hex string. " +
-      "Generate one with: openssl rand -hex 32"
+        "Please set this variable to a secure 32-byte hex string. " +
+        "Generate one with: openssl rand -hex 32"
     );
   }
-  
+
   if (process.env.SCREENSHOT_ENCRYPTION_KEY.length < 32) {
     throw new Error(
       "SCREENSHOT_ENCRYPTION_KEY must be at least 32 characters long for security. " +
-      "Generate a secure key with: openssl rand -hex 32"
+        "Generate a secure key with: openssl rand -hex 32"
     );
   }
 }
@@ -132,7 +136,7 @@ function encryptScreenshotData(buffer: Buffer): EncryptedScreenshot {
   try {
     // Validate environment variables before proceeding
     validateEnvironmentVariables();
-    
+
     const algorithm = "aes-256-cbc";
     const password = process.env.SCREENSHOT_ENCRYPTION_KEY!; // Safe to use ! after validation
     const iv = randomBytes(16);

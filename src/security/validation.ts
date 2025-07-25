@@ -6,23 +6,27 @@ export const SecureCommandSchema = z.object({
   command: z.string().min(1).max(10000),
   args: z.any().optional(),
   userId: z.string().optional(),
-  sessionId: z.string().optional()
+  sessionId: z.string().optional(),
 });
 
 export const UserPermissionSchema = z.object({
   userId: z.string(),
-  permissions: z.array(z.enum([
-    'execute_code',
-    'take_screenshot',
-    'read_logs',
-    'window_management',
-    'file_system',
-    'network_access'
-  ])),
-  rateLimit: z.object({
-    maxRequests: z.number().default(100),
-    windowMs: z.number().default(60000) // 1 minute
-  }).optional()
+  permissions: z.array(
+    z.enum([
+      "execute_code",
+      "take_screenshot",
+      "read_logs",
+      "window_management",
+      "file_system",
+      "network_access",
+    ])
+  ),
+  rateLimit: z
+    .object({
+      maxRequests: z.number().default(100),
+      windowMs: z.number().default(60000), // 1 minute
+    })
+    .optional(),
 });
 
 export type UserPermissions = z.infer<typeof UserPermissionSchema>;
@@ -31,19 +35,51 @@ export interface ValidationResult {
   isValid: boolean;
   errors: string[];
   sanitizedInput?: any;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  riskLevel: "low" | "medium" | "high" | "critical";
 }
 
 export class InputValidator {
   private static readonly DANGEROUS_KEYWORDS = [
-    'Function', 'constructor', '__proto__', 'prototype',
-    'process', 'require', 'import', 'fs', 'child_process',
-    'exec', 'spawn', 'fork', 'cluster', 'worker_threads',
-    'vm', 'repl', 'readline', 'crypto', 'http', 'https',
-    'net', 'dgram', 'tls', 'url', 'querystring', 'path',
-    'os', 'util', 'events', 'stream', 'buffer', 'timers',
-    'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout',
-    'setInterval', 'clearInterval', 'global', 'globalThis'
+    "Function",
+    "constructor",
+    "__proto__",
+    "prototype",
+    "process",
+    "require",
+    "import",
+    "fs",
+    "child_process",
+    "exec",
+    "spawn",
+    "fork",
+    "cluster",
+    "worker_threads",
+    "vm",
+    "repl",
+    "readline",
+    "crypto",
+    "http",
+    "https",
+    "net",
+    "dgram",
+    "tls",
+    "url",
+    "querystring",
+    "path",
+    "os",
+    "util",
+    "events",
+    "stream",
+    "buffer",
+    "timers",
+    "setImmediate",
+    "clearImmediate",
+    "setTimeout",
+    "clearTimeout",
+    "setInterval",
+    "clearInterval",
+    "global",
+    "globalThis",
   ];
 
   private static readonly XSS_PATTERNS = [
@@ -54,7 +90,7 @@ export class InputValidator {
     /<object[^>]*>/gi,
     /<embed[^>]*>/gi,
     /<link[^>]*>/gi,
-    /<meta[^>]*>/gi
+    /<meta[^>]*>/gi,
   ];
 
   private static readonly INJECTION_PATTERNS = [
@@ -62,25 +98,25 @@ export class InputValidator {
     /\$\{[^}]*\}/g, // Template literal injection
     /`[^`]*`/g, // Backtick strings
     /eval\s*\(/gi,
-    /Function\s*\(/gi,
-    /new\s+Function/gi
+    /new\s+Function\s*\(/gi, // Function constructor only, not function expressions
+    /window\s*\[\s*['"]Function['"]\s*\]/gi, // Dynamic function access
   ];
 
   static validateCommand(input: unknown): ValidationResult {
     try {
       // Parse and validate structure
       const parsed = SecureCommandSchema.parse(input);
-      
+
       const result: ValidationResult = {
         isValid: true,
         errors: [],
         sanitizedInput: parsed,
-        riskLevel: 'low'
+        riskLevel: "low",
       };
 
       // Validate command content
       let commandValidation;
-      if (parsed.command === 'eval' && parsed.args) {
+      if (parsed.command === "eval" && parsed.args) {
         // Special validation for eval commands - validate the code being executed
         commandValidation = this.validateEvalContent(String(parsed.args));
       } else {
@@ -92,28 +128,63 @@ export class InputValidator {
       // Sanitize the command
       result.sanitizedInput.command = this.sanitizeCommand(parsed.command);
 
-      result.isValid = result.errors.length === 0 && result.riskLevel !== 'critical';
+      result.isValid =
+        result.errors.length === 0 && result.riskLevel !== "critical";
 
       return result;
     } catch (error) {
       return {
         isValid: false,
-        errors: [`Invalid input structure: ${error instanceof Error ? error.message : String(error)}`],
-        riskLevel: 'high'
+        errors: [
+          `Invalid input structure: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        ],
+        riskLevel: "high",
       };
     }
   }
 
-  private static validateCommandContent(command: string): { errors: string[]; riskFactors: string[] } {
+  private static validateCommandContent(command: string): {
+    errors: string[];
+    riskFactors: string[];
+  } {
     const errors: string[] = [];
     const riskFactors: string[] = [];
 
-    // Check for dangerous keywords
+    // Check for dangerous keywords, but allow legitimate function expressions
     for (const keyword of this.DANGEROUS_KEYWORDS) {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      const regex = new RegExp(`\\b${keyword}\\b`, "gi");
       if (regex.test(command)) {
-        errors.push(`Dangerous keyword detected: ${keyword}`);
-        riskFactors.push(`dangerous_keyword_${keyword}`);
+        // Special handling for 'Function' keyword
+        if (keyword === "Function") {
+          // Allow function expressions that start with ( like (function() {})()
+          // Also allow function declarations like function name() {}
+          // But block Function constructor calls
+          const isFunctionExpression = /^\s*\(\s*function\s*\(/.test(
+            command.trim()
+          );
+          const isFunctionDeclaration = /^\s*function\s+\w+\s*\(/.test(
+            command.trim()
+          );
+          const isFunctionConstructor =
+            /(?:new\s+Function\s*\(|(?:window\.|global\.)?Function\s*\()/gi.test(
+              command
+            );
+
+          if (
+            isFunctionConstructor &&
+            !isFunctionExpression &&
+            !isFunctionDeclaration
+          ) {
+            errors.push(`Dangerous keyword detected: ${keyword}`);
+            riskFactors.push(`dangerous_keyword_${keyword}`);
+          }
+          // Skip adding error for legitimate function expressions/declarations
+        } else {
+          errors.push(`Dangerous keyword detected: ${keyword}`);
+          riskFactors.push(`dangerous_keyword_${keyword}`);
+        }
       }
     }
 
@@ -121,7 +192,7 @@ export class InputValidator {
     for (const pattern of this.XSS_PATTERNS) {
       if (pattern.test(command)) {
         errors.push(`Potential XSS pattern detected`);
-        riskFactors.push('xss_pattern');
+        riskFactors.push("xss_pattern");
       }
     }
 
@@ -129,21 +200,25 @@ export class InputValidator {
     for (const pattern of this.INJECTION_PATTERNS) {
       if (pattern.test(command)) {
         errors.push(`Potential code injection detected`);
-        riskFactors.push('injection_pattern');
+        riskFactors.push("injection_pattern");
       }
     }
 
     // Check command length
     if (command.length > 5000) {
       errors.push(`Command too long (${command.length} chars, max 5000)`);
-      riskFactors.push('excessive_length');
+      riskFactors.push("excessive_length");
     }
 
     // Check for obfuscation attempts
     const obfuscationScore = this.calculateObfuscationScore(command);
     if (obfuscationScore > 0.7) {
-      errors.push(`Potential code obfuscation detected (score: ${obfuscationScore.toFixed(2)})`);
-      riskFactors.push('obfuscation');
+      errors.push(
+        `Potential code obfuscation detected (score: ${obfuscationScore.toFixed(
+          2
+        )})`
+      );
+      riskFactors.push("obfuscation");
     }
 
     return { errors, riskFactors };
@@ -152,7 +227,10 @@ export class InputValidator {
   /**
    * Special validation for eval commands - validates the actual code to be executed
    */
-  private static validateEvalContent(code: string): { errors: string[]; riskFactors: string[] } {
+  private static validateEvalContent(code: string): {
+    errors: string[];
+    riskFactors: string[];
+  } {
     const errors: string[] = [];
     const riskFactors: string[] = [];
 
@@ -167,12 +245,12 @@ export class InputValidator {
     ];
 
     // Check if it's a safe pattern
-    const isSafe = safePatterns.some(pattern => pattern.test(code.trim()));
-    
+    const isSafe = safePatterns.some((pattern) => pattern.test(code.trim()));
+
     if (!isSafe) {
       // Check for dangerous keywords in eval content
       for (const keyword of this.DANGEROUS_KEYWORDS) {
-        const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+        const regex = new RegExp(`\\b${keyword}\\b`, "gi");
         if (regex.test(code)) {
           errors.push(`Dangerous keyword detected in eval: ${keyword}`);
           riskFactors.push(`eval_dangerous_keyword_${keyword}`);
@@ -182,13 +260,13 @@ export class InputValidator {
       // Check for function calls that might be dangerous
       if (/\(\s*\)|\w+\s*\(/.test(code)) {
         errors.push(`Function calls in eval are restricted`);
-        riskFactors.push('eval_function_call');
+        riskFactors.push("eval_function_call");
       }
 
       // Check for assignment operations
       if (/=(?!=)/.test(code)) {
         errors.push(`Assignment operations in eval are restricted`);
-        riskFactors.push('eval_assignment');
+        riskFactors.push("eval_assignment");
       }
     }
 
@@ -198,7 +276,7 @@ export class InputValidator {
   private static calculateObfuscationScore(code: string): number {
     let score = 0;
     const length = code.length;
-    
+
     if (length === 0) return 0;
 
     // Check for excessive special characters
@@ -223,35 +301,37 @@ export class InputValidator {
     return Math.min(score, 1.0);
   }
 
-  private static calculateRiskLevel(riskFactors: string[]): 'low' | 'medium' | 'high' | 'critical' {
-    const criticalFactors = riskFactors.filter(f => 
-      f.includes('dangerous_keyword') || f.includes('injection_pattern')
-    );
-    
-    const highFactors = riskFactors.filter(f => 
-      f.includes('xss_pattern') || f.includes('obfuscation')
+  private static calculateRiskLevel(
+    riskFactors: string[]
+  ): "low" | "medium" | "high" | "critical" {
+    const criticalFactors = riskFactors.filter(
+      (f) => f.includes("dangerous_keyword") || f.includes("injection_pattern")
     );
 
-    if (criticalFactors.length > 0) return 'critical';
-    if (highFactors.length > 0 || riskFactors.length > 3) return 'high';
-    if (riskFactors.length > 1) return 'medium';
-    return 'low';
+    const highFactors = riskFactors.filter(
+      (f) => f.includes("xss_pattern") || f.includes("obfuscation")
+    );
+
+    if (criticalFactors.length > 0) return "critical";
+    if (highFactors.length > 0 || riskFactors.length > 3) return "high";
+    if (riskFactors.length > 1) return "medium";
+    return "low";
   }
 
   private static sanitizeCommand(command: string): string {
     // Remove dangerous patterns
     let sanitized = command;
-    
+
     // Remove HTML/script tags
-    sanitized = sanitized.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-    sanitized = sanitized.replace(/<[^>]*>/g, '');
-    
+    sanitized = sanitized.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+    sanitized = sanitized.replace(/<[^>]*>/g, "");
+
     // Remove javascript: URLs
-    sanitized = sanitized.replace(/javascript:/gi, '');
-    
+    sanitized = sanitized.replace(/javascript:/gi, "");
+
     // For code execution, don't HTML-escape quotes as it breaks JavaScript syntax
     // Just remove dangerous URL schemes and HTML tags
-    
+
     return sanitized;
   }
 
@@ -262,13 +342,17 @@ export class InputValidator {
         isValid: true,
         errors: [],
         sanitizedInput: parsed,
-        riskLevel: 'low'
+        riskLevel: "low",
       };
     } catch (error) {
       return {
         isValid: false,
-        errors: [`Invalid permissions structure: ${error instanceof Error ? error.message : String(error)}`],
-        riskLevel: 'high'
+        errors: [
+          `Invalid permissions structure: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        ],
+        riskLevel: "high",
       };
     }
   }
@@ -277,29 +361,43 @@ export class InputValidator {
 export class RateLimiter {
   private requests: Map<string, number[]> = new Map();
 
-  checkLimit(userId: string, maxRequests: number = 100, windowMs: number = 60000): boolean {
+  checkLimit(
+    userId: string,
+    maxRequests: number = 100,
+    windowMs: number = 60000
+  ): boolean {
     const now = Date.now();
     const userRequests = this.requests.get(userId) || [];
-    
+
     // Remove old requests outside the time window
-    const validRequests = userRequests.filter(timestamp => now - timestamp < windowMs);
-    
+    const validRequests = userRequests.filter(
+      (timestamp) => now - timestamp < windowMs
+    );
+
     if (validRequests.length >= maxRequests) {
-      logger.warn(`Rate limit exceeded for user ${userId}: ${validRequests.length}/${maxRequests} requests`);
+      logger.warn(
+        `Rate limit exceeded for user ${userId}: ${validRequests.length}/${maxRequests} requests`
+      );
       return false;
     }
 
     // Add current request
     validRequests.push(now);
     this.requests.set(userId, validRequests);
-    
+
     return true;
   }
 
-  getRemainingRequests(userId: string, maxRequests: number = 100, windowMs: number = 60000): number {
+  getRemainingRequests(
+    userId: string,
+    maxRequests: number = 100,
+    windowMs: number = 60000
+  ): number {
     const now = Date.now();
     const userRequests = this.requests.get(userId) || [];
-    const validRequests = userRequests.filter(timestamp => now - timestamp < windowMs);
+    const validRequests = userRequests.filter(
+      (timestamp) => now - timestamp < windowMs
+    );
     return Math.max(0, maxRequests - validRequests.length);
   }
 }

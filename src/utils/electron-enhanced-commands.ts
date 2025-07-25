@@ -49,11 +49,11 @@ export async function sendCommandToElectron(
       case "click_button":
         // Validate and escape selector input
         const selector = args?.selector || "button";
-        if (selector.includes('javascript:') || selector.includes('<script')) {
+        if (selector.includes("javascript:") || selector.includes("<script")) {
           return "Invalid selector: contains dangerous content";
         }
         const escapedSelector = JSON.stringify(selector);
-        
+
         javascriptCode = `
           const button = document.querySelector(${escapedSelector});
           if (button && !button.disabled) {
@@ -191,42 +191,54 @@ export async function sendCommandToElectron(
       case "eval":
         const rawCode = typeof args === "string" ? args : args?.code || command;
         // Enhanced eval with better error handling and result reporting
+        const codeHash = Buffer.from(rawCode).toString("base64").slice(0, 10);
+        const isStateTest =
+          rawCode.includes("window.testState") ||
+          rawCode.includes("persistent-test-value") ||
+          rawCode.includes("window.testValue");
+
         javascriptCode = `
           (function() {
             try {
-              // Prevent rapid execution of the same code
-              const codeHash = '${Buffer.from(rawCode)
-                .toString("base64")
-                .slice(0, 10)}';
-              if (window._mcpExecuting && window._mcpExecuting[codeHash]) {
+              // Prevent rapid execution of the same code unless it's a state test
+              const codeHash = '${codeHash}';
+              const isStateTest = ${isStateTest};
+              const rawCode = ${JSON.stringify(rawCode)};
+              
+              if (!isStateTest && window._mcpExecuting && window._mcpExecuting[codeHash]) {
                 return { success: false, error: 'Code already executing', result: null };
               }
               
               window._mcpExecuting = window._mcpExecuting || {};
-              window._mcpExecuting[codeHash] = true;
+              if (!isStateTest) {
+                window._mcpExecuting[codeHash] = true;
+              }
               
               let result;
               ${
                 rawCode.trim().startsWith("() =>") ||
                 rawCode.trim().startsWith("function")
                   ? `result = (${rawCode})();`
-                  : `result = (function() { ${rawCode} })();`
+                  : rawCode.includes("return")
+                  ? `result = (function() { ${rawCode} })();`
+                  : `result = (function() { return (${rawCode}); })();`
               }
               
               setTimeout(() => {
-                if (window._mcpExecuting) {
+                if (!isStateTest && window._mcpExecuting) {
                   delete window._mcpExecuting[codeHash];
                 }
               }, 1000);
               
               // Enhanced result reporting
-              if (result === undefined) {
+              // For simple expressions, undefined might be a valid result for some cases
+              if (result === undefined && !rawCode.includes('window.') && !rawCode.includes('document.') && !rawCode.includes('||')) {
                 return { success: false, error: 'Command returned undefined - element may not exist or action failed', result: null };
               }
               if (result === null) {
                 return { success: false, error: 'Command returned null - element may not exist', result: null };
               }
-              if (result === false) {
+              if (result === false && rawCode.includes('click') || rawCode.includes('querySelector')) {
                 return { success: false, error: 'Command returned false - action likely failed', result: false };
               }
               

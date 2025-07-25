@@ -14,25 +14,31 @@ function escapeJavaScriptString(input: string): string {
 /**
  * Validate text input for potential security issues
  */
-function validateTextInput(text: string): { isValid: boolean; sanitized: string; warnings: string[] } {
+function validateTextInput(text: string): {
+  isValid: boolean;
+  sanitized: string;
+  warnings: string[];
+} {
   const warnings: string[] = [];
   let sanitized = text;
-  
+
   // Check for suspicious patterns
-  if (text.includes('javascript:')) warnings.push('Contains javascript: protocol');
-  if (text.includes('<script')) warnings.push('Contains script tags');
-  if (text.match(/['"]\s*;\s*/)) warnings.push('Contains potential code injection');
-  if (text.length > 1000) warnings.push('Input text is unusually long');
-  
+  if (text.includes("javascript:"))
+    warnings.push("Contains javascript: protocol");
+  if (text.includes("<script")) warnings.push("Contains script tags");
+  if (text.match(/['"]\s*;\s*/))
+    warnings.push("Contains potential code injection");
+  if (text.length > 1000) warnings.push("Input text is unusually long");
+
   // Basic sanitization - remove potentially dangerous content
-  sanitized = sanitized.replace(/javascript:/gi, '');
-  sanitized = sanitized.replace(/<script[^>]*>.*?<\/script>/gi, '');
+  sanitized = sanitized.replace(/javascript:/gi, "");
+  sanitized = sanitized.replace(/<script[^>]*>.*?<\/script>/gi, "");
   sanitized = sanitized.substring(0, 1000); // Limit length
-  
+
   return {
     isValid: warnings.length === 0,
     sanitized,
-    warnings
+    warnings,
   };
 }
 
@@ -339,12 +345,14 @@ export function generateClickByTextCommand(text: string): string {
   // Validate and sanitize input text
   const validation = validateTextInput(text);
   if (!validation.isValid) {
-    return `(function() { return "Security validation failed: ${validation.warnings.join(', ')}"; })()`;
+    return `(function() { return "Security validation failed: ${validation.warnings.join(
+      ", "
+    )}"; })()`;
   }
-  
+
   // Escape the text to prevent JavaScript injection
   const escapedText = escapeJavaScriptString(validation.sanitized);
-  
+
   return `
     (function() {
       const targetText = ${escapedText};  // Safe: JSON.stringify escapes quotes and special chars

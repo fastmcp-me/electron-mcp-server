@@ -1,7 +1,9 @@
-import { spawn, ChildProcess } from 'child_process';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { spawn, ChildProcess } from "child_process";
+import { promises as fs } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { createServer } from "net";
+import { createElectronAppDir, markResourceCleaned } from "../setup.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,22 +15,56 @@ export interface TestElectronApp {
 }
 
 /**
+ * Check if a port is available
+ */
+async function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.listen(port, () => {
+      server.once("close", () => resolve(true));
+      server.close();
+    });
+    server.on("error", () => resolve(false));
+  });
+}
+
+/**
+ * Find an available port starting from the given port
+ */
+async function findAvailablePort(startPort: number): Promise<number> {
+  let port = startPort;
+  while (port < startPort + 100) {
+    // Check up to 100 ports
+    if (await isPortAvailable(port)) {
+      return port;
+    }
+    port++;
+  }
+  throw new Error(`No available port found starting from ${startPort}`);
+}
+
+/**
  * Create a minimal headless Electron app for testing
  */
-export async function createTestElectronApp(port: number = 9222): Promise<TestElectronApp> {
-  // Create temporary directory for test app
-  const tempDir = path.join(__dirname, '..', '..', 'temp', `test-electron-${Date.now()}`);
+export async function createTestElectronApp(
+  port: number = 9222
+): Promise<TestElectronApp> {
+  // Find an available port starting from the requested port
+  const availablePort = await findAvailablePort(port);
+
+  // Create temporary directory for test app using centralized management
+  const tempDir = createElectronAppDir(availablePort);
   await fs.mkdir(tempDir, { recursive: true });
 
   // Create minimal package.json
   const packageJson = {
-    name: 'test-electron-app',
-    version: '1.0.0',
-    main: 'main.js',
-    private: true
+    name: "test-electron-app",
+    version: "1.0.0",
+    main: "main.js",
+    private: true,
   };
   await fs.writeFile(
-    path.join(tempDir, 'package.json'),
+    path.join(tempDir, "package.json"),
     JSON.stringify(packageJson, null, 2)
   );
 
@@ -38,7 +74,7 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
 // Enable remote debugging
-app.commandLine.appendSwitch('remote-debugging-port', '${port}');
+app.commandLine.appendSwitch('remote-debugging-port', '${availablePort}');
 
 // Disable GPU for headless testing
 app.commandLine.appendSwitch('disable-gpu');
@@ -88,10 +124,13 @@ app.on('activate', () => {
 
 // Log when remote debugging is ready
 app.on('ready', () => {
-  console.log('[TEST-APP] Electron app ready with remote debugging on port ${port}');
+  console.log('[TEST-APP] Electron app ready with remote debugging on port ' + ${availablePort});
+  setTimeout(() => {
+    console.log('Electron app ready with remote debugging');
+  }, 1000);
 });
 `;
-  await fs.writeFile(path.join(tempDir, 'main.js'), mainJs);
+  await fs.writeFile(path.join(tempDir, "main.js"), mainJs);
 
   // Create minimal HTML with test elements
   const indexHtml = `
@@ -168,46 +207,64 @@ app.on('ready', () => {
 </body>
 </html>
 `;
-  await fs.writeFile(path.join(tempDir, 'index.html'), indexHtml);
+  await fs.writeFile(path.join(tempDir, "index.html"), indexHtml);
 
   // Launch Electron with the test app
-  const electronPath = path.join(__dirname, '..', '..', 'node_modules', '.bin', 'electron');
+  const electronPath = path.join(
+    __dirname,
+    "..",
+    "..",
+    "node_modules",
+    ".bin",
+    "electron"
+  );
   const electronProcess = spawn(electronPath, [tempDir], {
-    stdio: ['pipe', 'pipe', 'pipe'],
+    stdio: ["pipe", "pipe", "pipe"],
     env: {
       ...process.env,
-      ELECTRON_DISABLE_SECURITY_WARNINGS: 'true'
-    }
+      ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
+    },
   });
 
   // Wait for the app to be ready
   await new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
-      reject(new Error('Test Electron app failed to start within 10 seconds'));
+      reject(
+        new Error(
+          `Test Electron app failed to start within 10 seconds on port ${availablePort}. Check if Electron is installed.`
+        )
+      );
     }, 10000);
 
-    electronProcess.stdout?.on('data', (data) => {
+    electronProcess.stdout?.on("data", (data) => {
       const output = data.toString();
-      if (output.includes('Electron app ready with remote debugging')) {
+      console.log(`[TEST-APP-STDOUT-${availablePort}]`, output.trim());
+      if (output.includes("Electron app ready with remote debugging")) {
         clearTimeout(timeout);
         resolve();
       }
     });
 
-    electronProcess.stderr?.on('data', (data) => {
+    electronProcess.stderr?.on("data", (data) => {
       const error = data.toString();
-      // Ignore common Electron warnings in headless mode
-      if (!error.includes('WARNING') && !error.includes('deprecated')) {
-        console.warn('[TEST-APP-STDERR]', error);
+      // Log all stderr for debugging, but ignore common warnings
+      console.warn(`[TEST-APP-STDERR-${availablePort}]`, error.trim());
+      if (
+        !error.includes("WARNING") &&
+        !error.includes("deprecated") &&
+        error.includes("Error")
+      ) {
+        clearTimeout(timeout);
+        reject(new Error(`Electron app failed to start: ${error}`));
       }
     });
 
-    electronProcess.on('error', (error) => {
+    electronProcess.on("error", (error) => {
       clearTimeout(timeout);
       reject(error);
     });
 
-    electronProcess.on('exit', (code) => {
+    electronProcess.on("exit", (code) => {
       if (code !== 0) {
         clearTimeout(timeout);
         reject(new Error(`Test Electron app exited with code ${code}`));
@@ -216,58 +273,64 @@ app.on('ready', () => {
   });
 
   // Give it a moment to fully initialize
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   const cleanup = async () => {
     if (electronProcess && !electronProcess.killed) {
-      electronProcess.kill('SIGTERM');
-      
+      electronProcess.kill("SIGTERM");
+
       // Wait for graceful shutdown
       await new Promise<void>((resolve) => {
         const forceKillTimeout = setTimeout(() => {
           if (!electronProcess.killed) {
-            electronProcess.kill('SIGKILL');
+            electronProcess.kill("SIGKILL");
           }
           resolve();
         }, 5000);
 
-        electronProcess.on('exit', () => {
+        electronProcess.on("exit", () => {
           clearTimeout(forceKillTimeout);
           resolve();
         });
       });
     }
 
-    // Clean up temp directory
+    // Clean up temp directory using centralized management
     try {
       await fs.rm(tempDir, { recursive: true, force: true });
+      markResourceCleaned(tempDir);
     } catch (error) {
-      console.warn('Failed to clean up temp directory:', error);
+      console.warn("Failed to clean up temp directory:", error);
     }
   };
 
   return {
     process: electronProcess,
-    port,
-    cleanup
+    port: availablePort,
+    cleanup,
   };
 }
 
 /**
  * Wait for Electron app to be discoverable via DevTools
  */
-export async function waitForElectronApp(port: number = 9222, timeout: number = 10000): Promise<boolean> {
+export async function waitForElectronApp(
+  port: number = 9222,
+  timeout: number = 10000
+): Promise<boolean> {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < timeout) {
     try {
       const response = await fetch(`http://localhost:${port}/json`, {
-        signal: AbortSignal.timeout(1000)
+        signal: AbortSignal.timeout(1000),
       });
-      
+
       if (response.ok) {
         const targets = await response.json();
-        const pageTargets = targets.filter((target: any) => target.type === 'page');
+        const pageTargets = targets.filter(
+          (target: any) => target.type === "page"
+        );
         if (pageTargets.length > 0) {
           return true;
         }
@@ -275,9 +338,9 @@ export async function waitForElectronApp(port: number = 9222, timeout: number = 
     } catch (error) {
       // Continue waiting
     }
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  
+
   return false;
 }
