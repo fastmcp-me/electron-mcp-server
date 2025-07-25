@@ -165,7 +165,7 @@ export class CodeSandbox {
     // Write to temporary file
     const tempDir = join(process.cwd(), 'temp', sessionId);
     await fs.mkdir(tempDir, { recursive: true });
-    const scriptPath = join(tempDir, 'script.js');
+    const scriptPath = join(tempDir, 'script.cjs'); // Use .cjs for CommonJS
     
     try {
       await fs.writeFile(scriptPath, wrapperCode);
@@ -178,7 +178,7 @@ export class CodeSandbox {
       // Cleanup
       try {
         await fs.unlink(scriptPath);
-        await fs.rmdir(tempDir);
+        await fs.rm(tempDir, { recursive: true, force: true });
       } catch (cleanupError) {
         logger.warn(`Failed to cleanup temp files for session ${sessionId}:`, cleanupError);
       }

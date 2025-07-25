@@ -197,18 +197,9 @@ export class InputValidator {
     // Remove javascript: URLs
     sanitized = sanitized.replace(/javascript:/gi, '');
     
-    // Escape special characters
-    sanitized = sanitized.replace(/[<>&"']/g, (char) => {
-      const entities: { [key: string]: string } = {
-        '<': '&lt;',
-        '>': '&gt;',
-        '&': '&amp;',
-        '"': '&quot;',
-        "'": '&#x27;'
-      };
-      return entities[char] || char;
-    });
-
+    // For code execution, don't HTML-escape quotes as it breaks JavaScript syntax
+    // Just remove dangerous URL schemes and HTML tags
+    
     return sanitized;
   }
 

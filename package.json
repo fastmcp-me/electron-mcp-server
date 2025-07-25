@@ -15,7 +15,10 @@
     "watch": "tsc --watch",
     "watch-and-serve": "tsc --watch & node --watch dist/index.js",
     "prepare": "npm run build",
-    "test": "node test.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
     "test:security": "npm run build && node test/security-test.js",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"

@@ -55,17 +55,6 @@ The following operations are automatically blocked for security:
 Security settings can be configured via environment variables:
 
 ```bash
-# Enable/disable security features
-ENABLE_SANDBOX=true
-ENABLE_INPUT_VALIDATION=true
-ENABLE_AUDIT_LOG=true
-ENABLE_SCREENSHOT_ENCRYPTION=true
-
-# Security thresholds
-DEFAULT_RISK_THRESHOLD=medium  # low|medium|high|critical
-SANDBOX_TIMEOUT=5000          # milliseconds
-MAX_EXECUTION_TIME=30000      # milliseconds
-
 # Encryption
 SCREENSHOT_ENCRYPTION_KEY=your-secret-key-here
 ```
@@ -129,17 +118,5 @@ All security events are logged to `logs/security/` with the following informatio
 - Execution outcome
 - User context (if available)
 - Performance metrics
-
-## 🚀 Future Enhancements
-
-Planned security improvements:
-
-- Integration with external malware scanners
-- Machine learning-based anomaly detection
-- Enhanced obfuscation detection
-- Real-time threat intelligence feeds
-- Compliance reporting features
-
----
 
 **Note**: This security implementation provides strong protection against common threats, but security is an ongoing process. Regular security audits and updates are recommended.
