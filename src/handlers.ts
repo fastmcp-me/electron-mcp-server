@@ -12,16 +12,40 @@ import { getElectronWindowInfo } from "./utils/electron-discovery.js";
 import { readElectronLogs } from "./utils/electron-logs.js";
 import { takeScreenshot } from "./screenshot.js";
 import { logger } from "./utils/logger.js";
+import { securityManager } from "./security/manager.js";
 
 export async function handleToolCall(
   request: z.infer<typeof CallToolRequestSchema>
 ) {
   const { name, arguments: args } = request.params;
 
+  // Extract request metadata for security logging
+  const sourceIP = (request as any).meta?.sourceIP;
+  const userAgent = (request as any).meta?.userAgent;
+
   try {
     switch (name) {
       case ToolName.GET_ELECTRON_WINDOW_INFO: {
+        // This is a low-risk read operation - basic validation only
         const { includeChildren } = GetElectronWindowInfoSchema.parse(args);
+        
+        const securityResult = await securityManager.executeSecurely({
+          command: 'get_window_info',
+          args,
+          sourceIP,
+          userAgent,
+          operationType: 'window_info'
+        });
+
+        if (securityResult.blocked) {
+          return {
+            content: [{
+              type: "text",
+              text: `Operation blocked: ${securityResult.error}`
+            }]
+          };
+        }
+
         const result = await getElectronWindowInfo(includeChildren);
         return {
           content: [
@@ -34,6 +58,23 @@ export async function handleToolCall(
       }
 
       case ToolName.TAKE_SCREENSHOT: {
+        // Security check for screenshot operation
+        const securityResult = await securityManager.executeSecurely({
+          command: 'take_screenshot',
+          args,
+          sourceIP,
+          userAgent,
+          operationType: 'screenshot'
+        });
+
+        if (securityResult.blocked) {
+          return {
+            content: [{
+              type: "text",
+              text: `Screenshot blocked: ${securityResult.error}`
+            }]
+          };
+        }
         const { outputPath, windowTitle } = TakeScreenshotSchema.parse(args);
         const result = await takeScreenshot(outputPath, windowTitle);
 
@@ -65,6 +106,35 @@ export async function handleToolCall(
       case ToolName.SEND_COMMAND_TO_ELECTRON: {
         const { command, args: commandArgs } =
           SendCommandToElectronSchema.parse(args);
+        
+        // Execute command through security manager
+        const securityResult = await securityManager.executeSecurely({
+          command,
+          args: commandArgs,
+          sourceIP,
+          userAgent,
+          operationType: 'command'
+        });
+
+        if (securityResult.blocked) {
+          return {
+            content: [{
+              type: "text",
+              text: `Command blocked: ${securityResult.error}\nRisk Level: ${securityResult.riskLevel}`
+            }]
+          };
+        }
+
+        if (!securityResult.success) {
+          return {
+            content: [{
+              type: "text",
+              text: `Command failed: ${securityResult.error}`
+            }]
+          };
+        }
+
+        // Execute the actual command if security checks pass
         const result = await sendCommandToElectron(command, commandArgs);
         return {
           content: [{ type: "text", text: result }],

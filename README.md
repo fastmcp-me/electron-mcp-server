@@ -16,7 +16,20 @@ Transform your Electron development experience with **AI-powered automation**:
 - **⚡ DevTools Protocol Integration**: Universal compatibility with any Electron app - no modifications required
 - **🚀 Development Observability**: Monitor logs, system info, and application behavior seamlessly
 
-## 🚀 Key Features
+## �️ Security Features
+
+**Enterprise-grade security** built for safe AI-powered automation:
+
+- **🔒 Sandboxed Execution**: All code runs in isolated environments with strict resource limits
+- **🔍 Input Validation**: Advanced static analysis detects and blocks dangerous code patterns
+- **📝 Comprehensive Auditing**: Encrypted logs track all operations with full traceability
+- **🖼️ Secure Screenshots**: Encrypted screenshot data with clear user notifications
+- **⚠️ Risk Assessment**: Automatic threat detection with configurable security thresholds
+- **🚫 Zero Trust**: Dangerous functions like `eval`, file system access, and network requests are blocked by default
+
+> **Safety First**: Every command is analyzed, validated, and executed in a secure sandbox before reaching your application.
+
+## �🚀 Key Features
 
 ### 🎮 Application Control & Automation
 

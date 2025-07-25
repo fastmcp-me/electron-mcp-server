@@ -16,6 +16,7 @@
     "watch-and-serve": "tsc --watch & node --watch dist/index.js",
     "prepare": "npm run build",
     "test": "node test.js",
+    "test:security": "npm run build && node test/security-test.js",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"
   },

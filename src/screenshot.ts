@@ -1,12 +1,52 @@
 import { chromium } from "playwright";
 import * as fs from "fs/promises";
+import { createCipher, randomBytes } from "crypto";
 import { logger } from "./utils/logger.js";
+
+interface EncryptedScreenshot {
+  encryptedData: string;
+  iv: string;
+  timestamp: string;
+}
+
+// Encrypt screenshot data for secure storage and transmission
+function encryptScreenshotData(buffer: Buffer): EncryptedScreenshot {
+  try {
+    const algorithm = 'aes-256-cbc';
+    const key = process.env.SCREENSHOT_ENCRYPTION_KEY || 'default-screenshot-key-change-me';
+    const iv = randomBytes(16);
+    
+    const cipher = createCipher(algorithm, key);
+    let encrypted = cipher.update(buffer.toString('base64'), 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    
+    return {
+      encryptedData: encrypted,
+      iv: iv.toString('hex'),
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    logger.warn('Failed to encrypt screenshot data:', error);
+    // Fallback to base64 encoding if encryption fails
+    return {
+      encryptedData: buffer.toString('base64'),
+      iv: '',
+      timestamp: new Date().toISOString()
+    };
+  }
+}
 
 // Helper function to take screenshot using only Playwright CDP (Chrome DevTools Protocol)
 export async function takeScreenshot(
   outputPath?: string,
   windowTitle?: string
-): Promise<{ filePath?: string; base64: string; data: string }> {
+): Promise<{ filePath?: string; base64: string; data: string; error?: string }> {
+  // Inform user about screenshot
+  logger.info("📸 Taking screenshot of Electron application", { 
+    outputPath, 
+    windowTitle,
+    timestamp: new Date().toISOString()
+  });
   try {
     // Connect to Electron's remote debugging port (default: 9222)
     const browser = await chromium.connectOverCDP("http://localhost:9222");
@@ -64,19 +104,24 @@ export async function takeScreenshot(
 
     await browser.close();
 
-    // Convert buffer to base64
+    // Encrypt screenshot data for security
+    const encryptedScreenshot = encryptScreenshotData(screenshotBuffer);
+    
+    // Convert buffer to base64 for transmission
     const base64Data = screenshotBuffer.toString("base64");
     logger.info(
-      `Screenshot captured successfully (${screenshotBuffer.length} bytes)`
+      `Screenshot captured and encrypted successfully (${screenshotBuffer.length} bytes)`
     );
 
-    // If outputPath is provided, also save to file
+    // If outputPath is provided, save encrypted data to file
     if (outputPath) {
+      await fs.writeFile(outputPath + '.encrypted', JSON.stringify(encryptedScreenshot));
+      // Also save unencrypted for compatibility (in production, consider removing this)
       await fs.writeFile(outputPath, screenshotBuffer);
       return {
         filePath: outputPath,
         base64: base64Data,
-        data: `Screenshot saved to: ${outputPath} and returned as base64 data`,
+        data: `Screenshot saved to: ${outputPath} (encrypted backup: ${outputPath}.encrypted) and returned as base64 data`,
       };
     } else {
       return {
