@@ -409,37 +409,73 @@ export function generateClickByTextCommand(text: string): string {
         return \`Found potential matches but confidence too low (score: \${best.score}). Best match was: "\${best.text || best.ariaLabel}" - try being more specific.\`;
       }
       
-      // Enhanced clicking for React components
+      // Enhanced clicking for React components with duplicate prevention
       function clickElement(element) {
+        // Enhanced duplicate prevention
+        const elementId = element.id || element.className || element.textContent?.slice(0, 20) || 'element';
+        const clickKey = 'mcp_click_text_' + btoa(elementId).slice(0, 10);
+        
+        // Check if this element was recently clicked
+        if (window[clickKey] && Date.now() - window[clickKey] < 2000) {
+          throw new Error('Element click prevented - too soon after previous click');
+        }
+        
+        // Mark this element as clicked
+        window[clickKey] = Date.now();
+        
+        // Prevent multiple rapid events
+        const originalPointerEvents = element.style.pointerEvents;
+        element.style.pointerEvents = 'none';
+        
         // Scroll element into view if needed
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         
-        // Focus the element
-        if (element.focus) element.focus();
+        // Focus the element if focusable
+        try {
+          if (element.focus && typeof element.focus === 'function') {
+            element.focus();
+          }
+        } catch (e) {
+          // Focus may fail on some elements, that's ok
+        }
         
-        // Create and dispatch multiple events for React compatibility
+        // Create and dispatch comprehensive click events for React
         const events = [
-          new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
-          new MouseEvent('mouseup', { bubbles: true, cancelable: true }),
-          new MouseEvent('click', { bubbles: true, cancelable: true }),
+          new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }),
+          new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }),
+          new MouseEvent('click', { bubbles: true, cancelable: true, view: window })
         ];
         
+        let clickSuccessful = true;
         events.forEach(event => {
-          element.dispatchEvent(event);
+          const result = element.dispatchEvent(event);
+          if (!result) clickSuccessful = false;
         });
         
-        // Try programmatic click as fallback
-        if (element.click) {
-          element.click();
+        // Trigger additional React events if it's a form element
+        if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+          element.dispatchEvent(new Event('input', { bubbles: true }));
+          element.dispatchEvent(new Event('change', { bubbles: true }));
         }
+        
+        // Re-enable after delay
+        setTimeout(() => {
+          element.style.pointerEvents = originalPointerEvents;
+        }, 1000);
+        
+        if (!clickSuccessful) {
+          throw new Error('Click events were cancelled by the page');
+        }
+        
+        return true;
       }
       
-      // Wait a moment for scroll, then click
-      setTimeout(() => {
-        clickElement(best.element);
-      }, 100);
-      
-      return \`Clicked best match (score: \${best.score}): "\${best.text || best.ariaLabel || best.title}" - searched for: "\${targetText}"\`;
+      try {
+        const clickResult = clickElement(best.element);
+        return \`Successfully clicked element (score: \${best.score}): "\${best.text || best.ariaLabel || best.title}" - searched for: "\${targetText}"\`;
+      } catch (error) {
+        return \`Failed to click element: \${error.message}. Element found (score: \${best.score}): "\${best.text || best.ariaLabel || best.title}"\`;
+      }
     })()
   `;
 }

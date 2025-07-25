@@ -11,6 +11,7 @@ import { sendCommandToElectron } from "./utils/electron-enhanced-commands.js";
 import { getElectronWindowInfo } from "./utils/electron-discovery.js";
 import { readElectronLogs } from "./utils/electron-logs.js";
 import { takeScreenshot } from "./screenshot.js";
+import { logger } from "./utils/logger.js";
 
 export async function handleToolCall(
   request: z.infer<typeof CallToolRequestSchema>
@@ -38,19 +39,19 @@ export async function handleToolCall(
 
         // Return the screenshot as base64 data for AI to evaluate
         const content: any[] = [];
-        
+
         if (result.filePath) {
-          content.push({ 
-            type: "text", 
-            text: `Screenshot saved to: ${result.filePath}` 
+          content.push({
+            type: "text",
+            text: `Screenshot saved to: ${result.filePath}`,
           });
         } else {
-          content.push({ 
-            type: "text", 
-            text: "Screenshot captured in memory (no file saved)" 
+          content.push({
+            type: "text",
+            text: "Screenshot captured in memory (no file saved)",
           });
         }
-        
+
         // Add the image data for AI evaluation
         content.push({
           type: "image",
@@ -107,13 +108,20 @@ export async function handleToolCall(
         };
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    logger.error(`Tool execution failed: ${name}`, {
+      error: errorMessage,
+      stack: errorStack,
+      args,
+    });
+
     return {
       content: [
         {
           type: "text",
-          text: `Error executing ${name}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          text: `Error executing ${name}: ${errorMessage}`,
         },
       ],
       isError: true,

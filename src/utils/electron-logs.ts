@@ -1,7 +1,7 @@
-import WebSocket from "ws";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { findElectronTarget, connectForLogs } from "./electron-connection.js";
+import { logger } from "./logger.js";
 
 export type LogType = "console" | "main" | "renderer" | "all";
 
@@ -21,19 +21,19 @@ export async function readElectronLogs(
   follow: boolean = false
 ): Promise<string> {
   try {
-    console.log(
+    logger.info(
       "[MCP] Looking for running Electron applications for log access..."
     );
 
     try {
       const target = await findElectronTarget();
-      
+
       // Connect via WebSocket to get console logs
       if (logType === "console" || logType === "all") {
         return await getConsoleLogsViaDevTools(target, lines, follow);
       }
     } catch (error) {
-      console.log(
+      logger.info(
         "[MCP] No DevTools connection found, checking system logs..."
       );
     }
@@ -58,7 +58,7 @@ async function getConsoleLogsViaDevTools(
   follow: boolean
 ): Promise<string> {
   const logs: string[] = [];
-  
+
   return new Promise(async (resolve, reject) => {
     try {
       const ws = await connectForLogs(target, (log: string) => {
@@ -73,10 +73,13 @@ async function getConsoleLogsViaDevTools(
       if (!follow) {
         setTimeout(() => {
           ws.close();
-          resolve(logs.length > 0 ? logs.slice(-lines).join("\n") : "No console logs available");
+          resolve(
+            logs.length > 0
+              ? logs.slice(-lines).join("\n")
+              : "No console logs available"
+          );
         }, 5000);
       }
-      
     } catch (error) {
       reject(error);
     }
@@ -90,7 +93,7 @@ async function getSystemElectronLogs(
   logType: LogType = "all",
   lines: number = 100
 ): Promise<string> {
-  console.log("[MCP] Reading system logs for Electron processes...");
+  logger.info("[MCP] Reading system logs for Electron processes...");
 
   try {
     const execAsync = promisify(exec);
@@ -119,7 +122,6 @@ async function getSystemElectronLogs(
       logOutput += `  Command: ${command}\n\n`;
     });
 
-    // Try to read console.log output from system logs
     try {
       const { stdout: logContent } = await execAsync(
         `log show --last 1h --predicate 'process == "Electron"' --style compact | tail -${lines}`
@@ -154,13 +156,13 @@ export async function streamElectronLogs(
 ): Promise<() => void> {
   try {
     const target = await findElectronTarget();
-    
+
     const ws = await connectForLogs(target, (logString: string) => {
       const log: LogEntry = {
         timestamp: new Date().toISOString(),
         level: extractLogLevel(logString),
         message: logString,
-        source: "console"
+        source: "console",
       };
       onLog(log);
     });
@@ -169,9 +171,12 @@ export async function streamElectronLogs(
     return () => {
       ws.close();
     };
-    
   } catch (error) {
-    throw new Error(`Failed to stream logs: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to stream logs: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
 
@@ -179,7 +184,9 @@ export async function streamElectronLogs(
  * Extract log level from log string
  */
 function extractLogLevel(logString: string): string {
-  const levelMatch = logString.match(/\[(.*?)\]\s+(INFO|WARN|ERROR|DEBUG|LOG):/i);
+  const levelMatch = logString.match(
+    /\[(.*?)\]\s+(INFO|WARN|ERROR|DEBUG|LOG):/i
+  );
   return levelMatch ? levelMatch[2].toLowerCase() : "info";
 }
 
@@ -189,16 +196,20 @@ function extractLogLevel(logString: string): string {
 export async function clearConsoleLogs(): Promise<string> {
   try {
     const target = await findElectronTarget();
-    
+
     const clearCommand = `
       console.clear();
       'Console cleared'
     `;
-    
+
     // Note: This depends on the electron-enhanced-commands module
     // We'll need to import it or duplicate the executeInElectron function
     return "Console clear command sent (effectiveness depends on application)";
   } catch (error) {
-    throw new Error(`Failed to clear logs: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to clear logs: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }

@@ -161,72 +161,91 @@ export function generateFillInputCommand(selector: string, value: string, search
       
       // Enhanced input filling for React components
       function fillInputValue(element, newValue) {
-        // Scroll into view
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Focus the element first
-        element.focus();
-        
-        // For React components, we need to trigger the right events
-        
-        // Method 1: Direct value assignment with React events
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-        const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-        
-        if (element.tagName === 'INPUT' && nativeInputValueSetter) {
-          nativeInputValueSetter.call(element, newValue);
-        } else if (element.tagName === 'TEXTAREA' && nativeTextAreaValueSetter) {
-          nativeTextAreaValueSetter.call(element, newValue);
-        } else {
-          element.value = newValue;
-        }
-        
-        // Create and dispatch React-compatible events
-        const events = [
-          new Event('input', { bubbles: true, cancelable: true }),
-          new Event('change', { bubbles: true, cancelable: true }),
-          new KeyboardEvent('keydown', { bubbles: true, cancelable: true }),
-          new KeyboardEvent('keyup', { bubbles: true, cancelable: true }),
-        ];
-        
-        events.forEach(event => {
-          element.dispatchEvent(event);
-        });
-        
-        // Method 2: Simulate typing for more realistic interaction
-        if (window.React || window._reactInternalInstance || element._reactInternalFiber) {
-          // Clear existing content first
-          element.select();
-          document.execCommand('delete');
+        try {
+          // Store original value for comparison
+          const originalValue = element.value;
           
-          // Type character by character
-          newValue.split('').forEach((char, index) => {
-            setTimeout(() => {
-              element.value += char;
+          // Scroll into view
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          
+          // Focus the element first
+          element.focus();
+          
+          // Wait a moment for focus
+          setTimeout(() => {
+            // For React components, we need to trigger the right events
+            
+            // Method 1: Direct value assignment with React events
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+            const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+            
+            // Clear existing content first
+            element.select();
+            
+            if (element.tagName === 'INPUT' && nativeInputValueSetter) {
+              nativeInputValueSetter.call(element, newValue);
+            } else if (element.tagName === 'TEXTAREA' && nativeTextAreaValueSetter) {
+              nativeTextAreaValueSetter.call(element, newValue);
+            } else {
+              element.value = newValue;
+            }
+            
+            // Create and dispatch React-compatible events in proper order
+            const events = [
+              new Event('focus', { bubbles: true, cancelable: true }),
+              new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'a', ctrlKey: true }), // Ctrl+A
+              new KeyboardEvent('keyup', { bubbles: true, cancelable: true, key: 'a', ctrlKey: true }),
+              new Event('input', { bubbles: true, cancelable: true }),
+              new Event('change', { bubbles: true, cancelable: true }),
+              new Event('blur', { bubbles: true, cancelable: true })
+            ];
+            
+            events.forEach((event, index) => {
+              setTimeout(() => {
+                element.dispatchEvent(event);
+              }, index * 50);
+            });
+            
+            // Method 2: Additional React trigger for controlled components
+            if (window.React || window._reactInternalInstance || element._reactInternalFiber) {
+              setTimeout(() => {
+                // Trigger React's internal onChange
+                const reactEvent = new Event('input', { bubbles: true });
+                Object.defineProperty(reactEvent, 'target', { value: element, writable: false });
+                Object.defineProperty(reactEvent, 'currentTarget', { value: element, writable: false });
+                element.dispatchEvent(reactEvent);
+              }, 300);
+            }
+            
+            // Method 3: Fallback for contenteditable elements
+            if (element.contentEditable === 'true') {
+              element.textContent = newValue;
               element.dispatchEvent(new Event('input', { bubbles: true }));
-            }, index * 10);
-          });
-          
-          // Final change event
-          setTimeout(() => {
-            element.dispatchEvent(new Event('change', { bubbles: true }));
-          }, newValue.length * 10 + 50);
-        }
-        
-        // Method 3: Fallback for contenteditable elements
-        if (element.contentEditable === 'true') {
-          element.textContent = newValue;
-          element.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        
-        // Trigger form validation if present
-        if (element.form && element.form.checkValidity) {
-          setTimeout(() => {
-            element.form.checkValidity();
+            }
+            
+            // Trigger form validation if present
+            if (element.form && element.form.checkValidity) {
+              setTimeout(() => {
+                element.form.checkValidity();
+              }, 500);
+            }
+            
+            // Verify the value was set correctly
+            setTimeout(() => {
+              if (element.value === newValue) {
+                console.log('Input value successfully set and verified');
+              } else {
+                console.warn('Input value verification failed:', element.value, 'vs', newValue);
+              }
+            }, 600);
+            
           }, 100);
+          
+          return true;
+        } catch (error) {
+          console.error('Error in fillInputValue:', error);
+          return false;
         }
-        
-        return true;
       }
       
       let targetElement = null;

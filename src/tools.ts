@@ -39,10 +39,12 @@ Enhanced UI interaction commands:
 - 'fill_input': Fill input fields by selector, placeholder text, or associated label
 - 'select_option': Select dropdown options by value or text
 - 'get_page_structure': Get organized overview of page elements (buttons, inputs, selects, links)
+- 'debug_elements': Get debugging info about buttons and form elements on the page
+- 'verify_form_state': Check current form state and validation status
 - 'get_title', 'get_url', 'get_body_text': Basic page information
-- 'eval': Execute custom JavaScript code
+- 'eval': Execute custom JavaScript code with enhanced error reporting
 
-Use 'get_page_structure' first to understand available elements, then use specific interaction commands.`,
+Use 'get_page_structure' or 'debug_elements' first to understand available elements, then use specific interaction commands.`,
     inputSchema: zodToJsonSchema(SendCommandToElectronSchema) as ToolInput,
   },
   {

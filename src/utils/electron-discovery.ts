@@ -1,5 +1,6 @@
 import { exec } from "child_process";
 import { promisify } from "util";
+import { logger } from "./logger.js";
 
 export interface ElectronAppInfo {
   port: number;
@@ -30,7 +31,7 @@ export interface ElectronWindowResult {
  * Scan for running Electron applications with DevTools enabled
  */
 export async function scanForElectronApps(): Promise<ElectronAppInfo[]> {
-  console.log("[MCP] Scanning for running Electron applications...");
+  logger.debug("Scanning for running Electron applications...");
 
   const commonPorts = [9222, 9223, 9224, 9225];
   const foundApps: ElectronAppInfo[] = [];
@@ -52,8 +53,8 @@ export async function scanForElectronApps(): Promise<ElectronAppInfo[]> {
             port,
             targets: pageTargets,
           });
-          console.log(
-            `[MCP] Found Electron app on port ${port} with ${pageTargets.length} windows`
+          logger.debug(
+            `Found Electron app on port ${port} with ${pageTargets.length} windows`
           );
         }
       }
@@ -70,7 +71,7 @@ export async function scanForElectronApps(): Promise<ElectronAppInfo[]> {
  */
 export async function getElectronProcessInfo(): Promise<any> {
   const execAsync = promisify(exec);
-  
+
   try {
     const { stdout } = await execAsync(
       "ps aux | grep -i electron | grep -v grep | grep -v 'Visual Studio Code'"
@@ -92,7 +93,7 @@ export async function getElectronProcessInfo(): Promise<any> {
 
     return { electronProcesses };
   } catch (error) {
-    console.log("[MCP] Could not get process info:", error);
+    logger.debug("Could not get process info:", error);
     return {};
   }
 }
@@ -156,7 +157,7 @@ export async function getElectronWindowInfo(
       automationReady: true,
     };
   } catch (error) {
-    console.error("[MCP] Failed to scan for applications:", error);
+    logger.error("Failed to scan for applications:", error);
     return {
       platform: process.platform,
       windows: [],
