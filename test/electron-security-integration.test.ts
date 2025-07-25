@@ -1,12 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  afterEach,
-} from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   createTestElectronApp,
   waitForElectronApp,
@@ -15,7 +7,6 @@ import {
 import { handleToolCall } from "../src/handlers.js";
 import { ToolName } from "../src/tools.js";
 import { join } from "path";
-import { rmSync } from "fs";
 import { promises as fs } from "fs";
 import { tmpdir } from "os";
 
@@ -507,12 +498,12 @@ describe("Electron Integration & Security Tests", () => {
     });
 
     it("should maintain state between commands", async () => {
-      // Set some state
+      // Set some state with a more explicit approach
       const setState = await handleToolCall(
         createMCPRequest(ToolName.SEND_COMMAND_TO_ELECTRON, {
           command: "eval",
           args: {
-            code: 'window.testValue = "persistent-test-value"; "value-set"',
+            code: 'window.mcpTestValue = "persistent-test-value"; "State set successfully"',
           },
         })
       );
@@ -521,18 +512,23 @@ describe("Electron Integration & Security Tests", () => {
       // Add a longer delay to ensure the previous command completes
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // Retrieve state in a separate command
+      // Retrieve state in a separate command - check multiple ways
       const getState = await handleToolCall(
         createMCPRequest(ToolName.SEND_COMMAND_TO_ELECTRON, {
           command: "eval",
           args: {
-            code: "window.testValue || 'undefined'",
+            code: "window.mcpTestValue || 'undefined'",
           },
         })
       );
       expect(getState.isError).toBe(false);
       if (!getState.isError) {
-        expect(getState.content[0].text).toContain("persistent-test-value");
+        // Check if the state was preserved - either in the result or in the text
+        const text = getState.content[0].text;
+        expect(
+          text.includes("persistent-test-value") || 
+          text.includes('"persistent-test-value"')
+        ).toBe(true);
       }
     });
   });
@@ -747,6 +743,7 @@ describe("Electron Integration & Security Tests", () => {
           text.includes("no element") ||
           text.includes("Command returned undefined") ||
           text.includes("action failed") ||
+          text.includes("Failed to click element") ||
           text.includes("Successfully clicked"); // If fuzzy matching found something
         expect(isReasonableResult).toBe(true);
       }

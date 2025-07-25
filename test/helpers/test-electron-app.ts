@@ -69,18 +69,33 @@ export async function createTestElectronApp(
   );
 
   // Create minimal main.js
-  const mainJs = `
-const { app, BrowserWindow } = require('electron');
-const path = require('path');
+  const mainJs = `// Test Electron App for MCP Server Testing
+console.log('Starting Electron app...');
 
-// Enable remote debugging
+const electron = require('electron');
+console.log('Electron module:', typeof electron);
+
+const { app, BrowserWindow } = electron;
+console.log('App object:', typeof app);
+console.log('BrowserWindow object:', typeof BrowserWindow);
+
+if (typeof app === 'undefined') {
+  console.error('ERROR: app object is undefined');
+  process.exit(1);
+}
+
+if (typeof app.commandLine === 'undefined') {
+  console.error('ERROR: app.commandLine is undefined');
+  process.exit(1);
+}
+
+console.log('Setting command line switches...');
 app.commandLine.appendSwitch('remote-debugging-port', '${availablePort}');
-
-// Disable GPU for headless testing
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('disable-software-rasterizer');
 app.commandLine.appendSwitch('disable-web-security');
+console.log('Command line switches set successfully');
 
 let mainWindow;
 
@@ -210,19 +225,26 @@ app.on('ready', () => {
   await fs.writeFile(path.join(tempDir, "index.html"), indexHtml);
 
   // Launch Electron with the test app
-  const electronPath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "node_modules",
-    ".bin",
-    "electron"
-  );
-  const electronProcess = spawn(electronPath, [tempDir], {
+  const electronPath = process.platform === 'win32' 
+    ? path.join(__dirname, "..", "..", "node_modules", ".bin", "electron.cmd")
+    : path.join(__dirname, "..", "..", "node_modules", ".bin", "electron");
+  
+  // Check if local electron exists, fallback to system electron
+  let finalElectronPath = electronPath;
+  try {
+    await fs.access(electronPath);
+  } catch {
+    // Fallback to system electron
+    finalElectronPath = 'electron';
+    console.log(`Local electron not found at ${electronPath}, using system electron`);
+  }
+  
+  const electronProcess = spawn(finalElectronPath, [tempDir], {
     stdio: ["pipe", "pipe", "pipe"],
     env: {
       ...process.env,
       ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
+      NODE_ENV: "test",
     },
   });
 

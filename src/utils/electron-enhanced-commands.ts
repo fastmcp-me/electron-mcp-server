@@ -221,6 +221,8 @@ export async function sendCommandToElectron(
                   ? `result = (${rawCode})();`
                   : rawCode.includes("return")
                   ? `result = (function() { ${rawCode} })();`
+                  : rawCode.includes(";")
+                  ? `result = (function() { ${rawCode}; return "executed"; })();`
                   : `result = (function() { return (${rawCode}); })();`
               }
               
