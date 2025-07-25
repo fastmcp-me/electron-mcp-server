@@ -36,7 +36,7 @@ export interface ValidationResult {
 
 export class InputValidator {
   private static readonly DANGEROUS_KEYWORDS = [
-    'eval', 'Function', 'constructor', '__proto__', 'prototype',
+    'Function', 'constructor', '__proto__', 'prototype',
     'process', 'require', 'import', 'fs', 'child_process',
     'exec', 'spawn', 'fork', 'cluster', 'worker_threads',
     'vm', 'repl', 'readline', 'crypto', 'http', 'https',
@@ -79,7 +79,13 @@ export class InputValidator {
       };
 
       // Validate command content
-      const commandValidation = this.validateCommandContent(parsed.command);
+      let commandValidation;
+      if (parsed.command === 'eval' && parsed.args) {
+        // Special validation for eval commands - validate the code being executed
+        commandValidation = this.validateEvalContent(String(parsed.args));
+      } else {
+        commandValidation = this.validateCommandContent(parsed.command);
+      }
       result.errors.push(...commandValidation.errors);
       result.riskLevel = this.calculateRiskLevel(commandValidation.riskFactors);
 
@@ -138,6 +144,52 @@ export class InputValidator {
     if (obfuscationScore > 0.7) {
       errors.push(`Potential code obfuscation detected (score: ${obfuscationScore.toFixed(2)})`);
       riskFactors.push('obfuscation');
+    }
+
+    return { errors, riskFactors };
+  }
+
+  /**
+   * Special validation for eval commands - validates the actual code to be executed
+   */
+  private static validateEvalContent(code: string): { errors: string[]; riskFactors: string[] } {
+    const errors: string[] = [];
+    const riskFactors: string[] = [];
+
+    // Allow simple safe operations
+    const safePatterns = [
+      /^document\.(title|location|URL|domain)$/,
+      /^window\.(location|navigator|screen)$/,
+      /^Math\.\w+$/,
+      /^Date\.\w+$/,
+      /^JSON\.(parse|stringify)$/,
+      /^[\w\.\[\]'"]+$/, // Simple property access
+    ];
+
+    // Check if it's a safe pattern
+    const isSafe = safePatterns.some(pattern => pattern.test(code.trim()));
+    
+    if (!isSafe) {
+      // Check for dangerous keywords in eval content
+      for (const keyword of this.DANGEROUS_KEYWORDS) {
+        const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+        if (regex.test(code)) {
+          errors.push(`Dangerous keyword detected in eval: ${keyword}`);
+          riskFactors.push(`eval_dangerous_keyword_${keyword}`);
+        }
+      }
+
+      // Check for function calls that might be dangerous
+      if (/\(\s*\)|\w+\s*\(/.test(code)) {
+        errors.push(`Function calls in eval are restricted`);
+        riskFactors.push('eval_function_call');
+      }
+
+      // Check for assignment operations
+      if (/=(?!=)/.test(code)) {
+        errors.push(`Assignment operations in eval are restricted`);
+        riskFactors.push('eval_assignment');
+      }
     }
 
     return { errors, riskFactors };

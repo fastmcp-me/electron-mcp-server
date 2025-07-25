@@ -42,7 +42,8 @@ export async function handleToolCall(
             content: [{
               type: "text",
               text: `Operation blocked: ${securityResult.error}`
-            }]
+            }],
+            isError: true,
           };
         }
 
@@ -54,6 +55,7 @@ export async function handleToolCall(
               text: `Window Information:\n\n${JSON.stringify(result, null, 2)}`,
             },
           ],
+          isError: false,
         };
       }
 
@@ -72,7 +74,8 @@ export async function handleToolCall(
             content: [{
               type: "text",
               text: `Screenshot blocked: ${securityResult.error}`
-            }]
+            }],
+            isError: true,
           };
         }
         const { outputPath, windowTitle } = TakeScreenshotSchema.parse(args);
@@ -100,7 +103,7 @@ export async function handleToolCall(
           mimeType: "image/png",
         });
 
-        return { content };
+        return { content, isError: false };
       }
 
       case ToolName.SEND_COMMAND_TO_ELECTRON: {
@@ -121,7 +124,8 @@ export async function handleToolCall(
             content: [{
               type: "text",
               text: `Command blocked: ${securityResult.error}\nRisk Level: ${securityResult.riskLevel}`
-            }]
+            }],
+            isError: true,
           };
         }
 
@@ -130,7 +134,8 @@ export async function handleToolCall(
             content: [{
               type: "text",
               text: `Command failed: ${securityResult.error}`
-            }]
+            }],
+            isError: true,
           };
         }
 
@@ -138,6 +143,7 @@ export async function handleToolCall(
         const result = await sendCommandToElectron(command, commandArgs);
         return {
           content: [{ type: "text", text: result }],
+          isError: false,
         };
       }
 
@@ -153,6 +159,7 @@ export async function handleToolCall(
                 text: `Following logs (${logType}). This is a snapshot of recent logs:\n\n${logs}`,
               },
             ],
+            isError: false,
           };
         }
 
@@ -163,6 +170,7 @@ export async function handleToolCall(
               text: `Electron logs (${logType}):\n\n${logs}`,
             },
           ],
+          isError: false,
         };
       }
 

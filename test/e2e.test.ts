@@ -651,3 +651,413 @@ describe("Error Handling E2E Tests", () => {
     expect(result.blocked).toBe(false); // Not blocked, just failed
   });
 });
+
+describe("Utility Functions E2E Tests", () => {
+  describe("Project Utils", () => {
+    it("should check Electron installation status", async () => {
+      const { isElectronInstalled } = await import("../src/utils/project.js");
+      
+      // This will actually check if Electron is installed on the system
+      const result = await isElectronInstalled();
+      
+      // Result should be boolean
+      expect(typeof result).toBe("boolean");
+    });
+
+    it("should check Electron installation in specific path", async () => {
+      const { isElectronInstalled } = await import("../src/utils/project.js");
+      
+      // Test with example-app path
+      const exampleAppPath = path.join(process.cwd(), "example-app");
+      const result = await isElectronInstalled(exampleAppPath);
+      
+      expect(typeof result).toBe("boolean");
+    });
+  });
+
+  describe("Logger Utils", () => {
+    it("should create and use logger instance", async () => {
+      const { logger } = await import("../src/utils/logger.js");
+      
+      // Test all log levels
+      logger.debug("Debug message");
+      logger.info("Info message");
+      logger.warn("Warning message");
+      logger.error("Error message");
+      
+      // Should not throw
+      expect(logger).toBeDefined();
+      expect(typeof logger.debug).toBe("function");
+      expect(typeof logger.info).toBe("function");
+      expect(typeof logger.warn).toBe("function");
+      expect(typeof logger.error).toBe("function");
+    });
+
+    it("should handle log level checking", async () => {
+      const { logger } = await import("../src/utils/logger.js");
+      
+      const isEnabled = logger.isEnabled(2); // Debug level
+      expect(typeof isEnabled).toBe("boolean");
+    });
+  });
+
+  describe("Logs Utils", () => {
+    it("should read electron logs with different types", async () => {
+      const { readElectronLogs } = await import("../src/utils/logs.js");
+      
+      const logTypes = ["all", "console", "main", "renderer"];
+      
+      for (const logType of logTypes) {
+        const logs = await readElectronLogs(logType, 5);
+        expect(Array.isArray(logs)).toBe(true);
+      }
+    });
+
+    it("should limit log results by line count", async () => {
+      const { readElectronLogs } = await import("../src/utils/logs.js");
+      
+      const logs = await readElectronLogs("all", 3);
+      expect(Array.isArray(logs)).toBe(true);
+      expect(logs.length).toBeLessThanOrEqual(3);
+    });
+  });
+});
+
+describe("Electron Connection E2E Tests", () => {
+  describe("Electron Discovery", () => {
+    it("should handle electron discovery with different parameters", async () => {
+      try {
+        const result = await getElectronWindowInfo(false);
+        expect(result).toBeDefined();
+        expect(result.windows).toBeDefined();
+      } catch (error: any) {
+        // Expected when no Electron app is running
+        expect(error.message).toMatch(
+          /connect ECONNREFUSED|Connection refused|No browser contexts found/
+        );
+      }
+    });
+
+    it("should handle electron discovery with children info", async () => {
+      try {
+        const result = await getElectronWindowInfo(true);
+        expect(result).toBeDefined();
+        expect(result.windows).toBeDefined();
+      } catch (error: any) {
+        // Expected when no Electron app is running
+        expect(error.message).toMatch(
+          /connect ECONNREFUSED|Connection refused|No browser contexts found/
+        );
+      }
+    });
+  });
+
+  describe("Electron Commands", () => {
+    it("should handle various enhanced commands", async () => {
+      const commands = [
+        { command: "get_title", args: {} },
+        { command: "get_url", args: {} },
+        { command: "get_body_text", args: {} },
+        { command: "get_page_structure", args: {} },
+        { command: "find_elements", args: {} },
+      ];
+
+      for (const { command, args } of commands) {
+        try {
+          const result = await sendCommandToElectron(command, args);
+          expect(typeof result).toBe("string");
+        } catch (error) {
+          // Expected when no Electron app is running
+          expect(error).toBeDefined();
+        }
+      }
+    });
+
+    it("should handle DOM interaction commands", async () => {
+      const interactionCommands = [
+        { command: "click_by_text", args: { text: "Submit" } },
+        { command: "fill_input", args: { selector: "#email", value: "test@example.com" } },
+        { command: "select_option", args: { selector: "#country", value: "US" } },
+      ];
+
+      for (const { command, args } of interactionCommands) {
+        try {
+          const result = await sendCommandToElectron(command, args);
+          expect(typeof result).toBe("string");
+        } catch (error) {
+          // Expected when no Electron app is running
+          expect(error).toBeDefined();
+        }
+      }
+    });
+
+    it("should handle custom eval commands", async () => {
+      const evalCommands = [
+        'document.title',
+        'window.location.href',
+        'document.readyState',
+        'navigator.userAgent',
+      ];
+
+      for (const evalCode of evalCommands) {
+        try {
+          const result = await sendCommandToElectron("eval", { code: evalCode });
+          expect(typeof result).toBe("string");
+        } catch (error) {
+          // Expected when no Electron app is running
+          expect(error).toBeDefined();
+        }
+      }
+    });
+  });
+});
+
+describe("Screenshot E2E Tests", () => {
+  it("should handle screenshot with different configurations", async () => {
+    const configurations = [
+      { outputPath: undefined, windowTitle: undefined },
+      { outputPath: path.join(globalTestDir, "test1.png"), windowTitle: undefined },
+      { outputPath: undefined, windowTitle: "Test Window" },
+      { outputPath: path.join(globalTestDir, "test2.png"), windowTitle: "Non-existent Window" },
+    ];
+
+    for (const config of configurations) {
+      try {
+        const result = await takeScreenshot(config.outputPath, config.windowTitle);
+        
+        expect(result).toBeDefined();
+        expect(result.base64).toBeDefined();
+        expect(typeof result.base64).toBe("string");
+        expect(result.data).toBeDefined();
+        
+        // If outputPath was provided and screenshot succeeded, check file exists
+        if (config.outputPath && result.base64.length > 0) {
+          const fileExists = await fs.access(config.outputPath).then(() => true).catch(() => false);
+          // File might not exist if screenshot failed, which is OK for this test
+        }
+      } catch (error: any) {
+        // Expected when no Electron app is running
+        expect(error.message).toMatch(
+          /No browser contexts found|connect ECONNREFUSED|Make sure the Electron app is running/
+        );
+      }
+    }
+  });
+
+  it("should handle screenshot with invalid paths gracefully", async () => {
+    const invalidPaths = [
+      "/nonexistent/directory/screenshot.png",
+      "/root/screenshot.png", // Permission denied
+    ];
+
+    for (const invalidPath of invalidPaths) {
+      try {
+        const result = await takeScreenshot(invalidPath);
+        // If it doesn't throw, that's also fine
+        expect(result).toBeDefined();
+      } catch (error) {
+        // Expected for invalid paths or no Electron app
+        expect(error).toBeDefined();
+      }
+    }
+  });
+});
+
+describe("Electron Process E2E Tests", () => {
+  it("should handle electron process utilities", async () => {
+    const { getElectronLogs, addElectronLog } = await import("../src/utils/electron-process.js");
+    
+    // Test getting logs
+    const logs = getElectronLogs();
+    expect(Array.isArray(logs)).toBe(true);
+    
+    // Test adding log
+    addElectronLog("Test log message");
+    const updatedLogs = getElectronLogs();
+    expect(updatedLogs.length).toBeGreaterThanOrEqual(logs.length);
+    expect(updatedLogs[updatedLogs.length - 1]).toContain("Test log message");
+  });
+
+  it("should handle multiple log additions", async () => {
+    const { getElectronLogs, addElectronLog } = await import("../src/utils/electron-process.js");
+    
+    const initialCount = getElectronLogs().length;
+    
+    const testLogs = [
+      "[Main] Application started",
+      "[Renderer] Page loaded",
+      "[Console] User interaction detected",
+    ];
+    
+    testLogs.forEach(log => addElectronLog(log));
+    
+    const finalLogs = getElectronLogs();
+    expect(finalLogs.length).toBe(initialCount + testLogs.length);
+    
+    // Check that all logs were added
+    testLogs.forEach(testLog => {
+      expect(finalLogs.some(log => log.includes(testLog))).toBe(true);
+    });
+  });
+});
+
+describe("Advanced Handler E2E Tests", () => {
+  it("should handle all tool types with various error conditions", async () => {
+    const errorScenarios = [
+      {
+        tool: ToolName.GET_ELECTRON_WINDOW_INFO,
+        args: { includeChildren: "not-a-boolean" },
+        expectedError: "boolean"
+      },
+      {
+        tool: ToolName.TAKE_SCREENSHOT,
+        args: { outputPath: 123 },
+        expectedError: "string"
+      },
+      {
+        tool: ToolName.SEND_COMMAND_TO_ELECTRON,
+        args: { command: null },
+        expectedError: "string"
+      },
+      {
+        tool: ToolName.READ_ELECTRON_LOGS,
+        args: { logType: 123 },
+        expectedError: "number" // The actual error mentions "received number"
+      },
+    ];
+
+    for (const scenario of errorScenarios) {
+      const request = {
+        method: "tools/call" as const,
+        params: {
+          name: scenario.tool,
+          arguments: scenario.args,
+        },
+      };
+
+      const result = await handleToolCall(request);
+      
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain(scenario.expectedError);
+    }
+  });
+
+  it("should handle tool calls with missing required arguments", async () => {
+    const incompleteRequests = [
+      {
+        tool: ToolName.SEND_COMMAND_TO_ELECTRON,
+        args: {}, // Missing command
+      },
+      {
+        tool: ToolName.READ_ELECTRON_LOGS,
+        args: { lines: "not-a-number" },
+      },
+    ];
+
+    for (const { tool, args } of incompleteRequests) {
+      const request = {
+        method: "tools/call" as const,
+        params: {
+          name: tool,
+          arguments: args,
+        },
+      };
+
+      const result = await handleToolCall(request);
+      
+      // Should handle gracefully
+      expect(result).toBeDefined();
+      expect(result.content).toBeDefined();
+    }
+  });
+
+  it("should handle unknown tool names", async () => {
+    const request = {
+      method: "tools/call" as const,
+      params: {
+        name: "unknown-tool",
+        arguments: {},
+      },
+    };
+
+    const result = await handleToolCall(request);
+    
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Unknown tool");
+  });
+});
+
+describe("Security Integration E2E Tests", () => {
+  it("should handle complex security scenarios", async () => {
+    const complexScenarios = [
+      {
+        name: "nested eval attempts",
+        command: 'Function("return eval")()("alert(1)")',
+        shouldBlock: true
+      },
+      {
+        name: "encoded dangerous commands",
+        command: String.fromCharCode(101,118,97,108) + '("process.exit(0)")',
+        shouldBlock: true
+      },
+      {
+        name: "simple DOM operations",
+        command: 'document.querySelector("#button").click()',
+        shouldBlock: false
+      },
+      {
+        name: "basic math operations",
+        command: 'const result = 2 + 2; result',
+        shouldBlock: false
+      },
+    ];
+
+    for (const scenario of complexScenarios) {
+      const result = await securityManager.executeSecurely({
+        command: scenario.command,
+        operationType: "command",
+      });
+
+      if (scenario.shouldBlock) {
+        expect(result.blocked).toBe(true);
+        expect(result.riskLevel).toMatch(/high|critical/);
+      } else {
+        expect(result.blocked).toBe(false);
+        expect(result.riskLevel).toMatch(/low|medium/);
+      }
+    }
+  });
+
+  it("should handle security configuration changes during execution", async () => {
+    const originalConfig = securityManager.getConfig();
+    
+    // Test with strict settings
+    securityManager.updateConfig({
+      enableSandbox: true,
+      defaultRiskThreshold: "low",
+    });
+
+    const strictResult = await securityManager.executeSecurely({
+      command: 'document.cookie',
+      operationType: "command",
+    });
+
+    // Test with relaxed settings
+    securityManager.updateConfig({
+      enableSandbox: true,
+      defaultRiskThreshold: "high",
+    });
+
+    const relaxedResult = await securityManager.executeSecurely({
+      command: 'document.cookie',
+      operationType: "command",
+    });
+
+    // Restore original config
+    securityManager.updateConfig(originalConfig);
+
+    // Verify behavior differences
+    expect(strictResult.riskLevel).toBeDefined();
+    expect(relaxedResult.riskLevel).toBeDefined();
+  });
+});

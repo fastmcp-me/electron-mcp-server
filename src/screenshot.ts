@@ -2,11 +2,72 @@ import { chromium } from "playwright";
 import * as fs from "fs/promises";
 import { createCipher, randomBytes } from "crypto";
 import { logger } from "./utils/logger.js";
+import { scanForElectronApps } from "./utils/electron-discovery.js";
+import * as path from "path";
 
 interface EncryptedScreenshot {
   encryptedData: string;
   iv: string;
   timestamp: string;
+}
+
+/**
+ * Validate if a file path is safe for screenshot output
+ */
+function validateScreenshotPath(outputPath: string): boolean {
+  if (!outputPath) return true;
+  
+  // Normalize the path to detect path traversal
+  const normalizedPath = path.normalize(outputPath);
+  
+  // Block dangerous paths
+  const dangerousPaths = [
+    '/etc/',
+    '/sys/',
+    '/proc/',
+    '/dev/',
+    '/bin/',
+    '/sbin/',
+    '/usr/bin/',
+    '/usr/sbin/',
+    '/root/',
+    '/home/',
+    '/.ssh/',
+    'C:\\Windows\\System32\\',
+    'C:\\Windows\\SysWOW64\\',
+    'C:\\Program Files\\',
+    'C:\\Users\\',
+    '\\Windows\\System32\\',
+    '\\Windows\\SysWOW64\\',
+    '\\Program Files\\',
+    '\\Users\\'
+  ];
+  
+  // Check for dangerous path patterns
+  for (const dangerousPath of dangerousPaths) {
+    if (normalizedPath.toLowerCase().includes(dangerousPath.toLowerCase())) {
+      return false;
+    }
+  }
+  
+  // Block path traversal attempts
+  if (normalizedPath.includes('..') || normalizedPath.includes('~')) {
+    return false;
+  }
+  
+  // Block absolute paths to system directories
+  if (path.isAbsolute(normalizedPath)) {
+    const absolutePath = normalizedPath.toLowerCase();
+    if (absolutePath.startsWith('/etc') || 
+        absolutePath.startsWith('/sys') || 
+        absolutePath.startsWith('/proc') ||
+        absolutePath.startsWith('c:\\windows') ||
+        absolutePath.startsWith('c:\\program files')) {
+      return false;
+    }
+  }
+  
+  return true;
 }
 
 // Encrypt screenshot data for secure storage and transmission
@@ -41,6 +102,11 @@ export async function takeScreenshot(
   outputPath?: string,
   windowTitle?: string
 ): Promise<{ filePath?: string; base64: string; data: string; error?: string }> {
+  // Validate output path for security
+  if (outputPath && !validateScreenshotPath(outputPath)) {
+    throw new Error(`Invalid output path: ${outputPath}. Path appears to target a restricted system location.`);
+  }
+  
   // Inform user about screenshot
   logger.info("📸 Taking screenshot of Electron application", { 
     outputPath, 
@@ -48,8 +114,27 @@ export async function takeScreenshot(
     timestamp: new Date().toISOString()
   });
   try {
-    // Connect to Electron's remote debugging port (default: 9222)
-    const browser = await chromium.connectOverCDP("http://localhost:9222");
+    // Find running Electron applications
+    const apps = await scanForElectronApps();
+    if (apps.length === 0) {
+      throw new Error("No running Electron applications found with remote debugging enabled");
+    }
+
+    // Use the first app found (or find by title if specified)
+    let targetApp = apps[0];
+    if (windowTitle) {
+      const namedApp = apps.find(app => 
+        app.targets.some(target => 
+          target.title?.toLowerCase().includes(windowTitle.toLowerCase())
+        )
+      );
+      if (namedApp) {
+        targetApp = namedApp;
+      }
+    }
+
+    // Connect to the Electron app's debugging port
+    const browser = await chromium.connectOverCDP(`http://localhost:${targetApp.port}`);
     const contexts = browser.contexts();
 
     if (contexts.length === 0) {
