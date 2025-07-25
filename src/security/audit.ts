@@ -1,6 +1,6 @@
-import { promises as fs } from "fs";
+import { promises as fs, mkdirSync, writeFileSync, chmodSync, readFileSync } from "fs";
 import { join } from "path";
-import { createHash, randomBytes } from "crypto";
+import { createHash, randomBytes, createCipheriv, createDecipheriv } from "crypto";
 import { logger } from "../utils/logger.js";
 
 export interface AuditLogEntry {
@@ -165,17 +165,17 @@ export class SecurityLogger {
 
     try {
       // Try to read existing key
-      const keyData = require("fs").readFileSync(keyPath);
+      const keyData = readFileSync(keyPath);
       return Buffer.from(keyData);
     } catch {
       // Generate new key
       const key = randomBytes(32);
       try {
         // Ensure directory exists before writing key
-        require("fs").mkdirSync(this.logDir, { recursive: true });
-        require("fs").writeFileSync(keyPath, key);
+        mkdirSync(this.logDir, { recursive: true });
+        writeFileSync(keyPath, key);
         // Restrict permissions on the key file
-        require("fs").chmodSync(keyPath, 0o600);
+        chmodSync(keyPath, 0o600);
       } catch (error) {
         logger.warn("Failed to save encryption key:", error);
       }
@@ -199,9 +199,8 @@ export class SecurityLogger {
 
   private encryptString(text: string): string {
     try {
-      const crypto = require("crypto");
-      const iv = crypto.randomBytes(16);
-      const cipher = crypto.createCipher("aes-256-cbc", this.encryptionKey);
+      const iv = randomBytes(16);
+      const cipher = createCipheriv("aes-256-cbc", this.encryptionKey, iv);
       let encrypted = cipher.update(text, "utf8", "hex");
       encrypted += cipher.final("hex");
       return iv.toString("hex") + ":" + encrypted;
@@ -213,14 +212,13 @@ export class SecurityLogger {
 
   private decryptString(encryptedText: string): string {
     try {
-      const crypto = require("crypto");
       const parts = encryptedText.split(":");
       if (parts.length !== 2) return "[ENCRYPTED]";
 
       const iv = Buffer.from(parts[0], "hex");
       const encrypted = parts[1];
 
-      const decipher = crypto.createDecipher("aes-256-cbc", this.encryptionKey);
+      const decipher = createDecipheriv("aes-256-cbc", this.encryptionKey, iv);
       let decrypted = decipher.update(encrypted, "hex", "utf8");
       decrypted += decipher.final("utf8");
       return decrypted;
