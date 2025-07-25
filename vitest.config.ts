@@ -20,6 +20,7 @@ export default defineConfig({
         "node_modules/",
         "test/",
         "dist/",
+        "example-app/",
         "**/*.d.ts",
         "**/*.config.*",
         "**/coverage/**",

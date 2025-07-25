@@ -179,6 +179,14 @@ export class CodeSandbox {
       try {
         await fs.unlink(scriptPath);
         await fs.rm(tempDir, { recursive: true, force: true });
+        
+        // Also try to clean up the parent temp directory if it's empty
+        try {
+          const parentTempDir = join(process.cwd(), 'temp');
+          await fs.rmdir(parentTempDir);
+        } catch {
+          // Ignore if not empty or doesn't exist
+        }
       } catch (cleanupError) {
         logger.warn(`Failed to cleanup temp files for session ${sessionId}:`, cleanupError);
       }
