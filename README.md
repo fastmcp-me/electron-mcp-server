@@ -27,16 +27,6 @@ Transform your Electron development experience with **AI-powered automation**:
 - **🔓 PERMISSIVE**: More functionality for trusted environments
 - **🛠️ DEVELOPMENT**: Minimal restrictions for development/testing
 
-### Quick Setup
-
-```bash
-# Set security level via environment variable
-export MCP_SECURITY_LEVEL=balanced  # strict|balanced|permissive|development
-
-# Or use the interactive configuration script
-./scripts/configure-security.sh
-```
-
 ### Secure UI Interaction Commands
 
 Instead of raw JavaScript eval, use these secure commands:
