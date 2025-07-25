@@ -28,21 +28,23 @@ export async function handleToolCall(
       case ToolName.GET_ELECTRON_WINDOW_INFO: {
         // This is a low-risk read operation - basic validation only
         const { includeChildren } = GetElectronWindowInfoSchema.parse(args);
-        
+
         const securityResult = await securityManager.executeSecurely({
-          command: 'get_window_info',
+          command: "get_window_info",
           args,
           sourceIP,
           userAgent,
-          operationType: 'window_info'
+          operationType: "window_info",
         });
 
         if (securityResult.blocked) {
           return {
-            content: [{
-              type: "text",
-              text: `Operation blocked: ${securityResult.error}`
-            }],
+            content: [
+              {
+                type: "text",
+                text: `Operation blocked: ${securityResult.error}`,
+              },
+            ],
             isError: true,
           };
         }
@@ -62,19 +64,21 @@ export async function handleToolCall(
       case ToolName.TAKE_SCREENSHOT: {
         // Security check for screenshot operation
         const securityResult = await securityManager.executeSecurely({
-          command: 'take_screenshot',
+          command: "take_screenshot",
           args,
           sourceIP,
           userAgent,
-          operationType: 'screenshot'
+          operationType: "screenshot",
         });
 
         if (securityResult.blocked) {
           return {
-            content: [{
-              type: "text",
-              text: `Screenshot blocked: ${securityResult.error}`
-            }],
+            content: [
+              {
+                type: "text",
+                text: `Screenshot blocked: ${securityResult.error}`,
+              },
+            ],
             isError: true,
           };
         }
@@ -109,32 +113,36 @@ export async function handleToolCall(
       case ToolName.SEND_COMMAND_TO_ELECTRON: {
         const { command, args: commandArgs } =
           SendCommandToElectronSchema.parse(args);
-        
+
         // Execute command through security manager
         const securityResult = await securityManager.executeSecurely({
           command,
           args: commandArgs,
           sourceIP,
           userAgent,
-          operationType: 'command'
+          operationType: "command",
         });
 
         if (securityResult.blocked) {
           return {
-            content: [{
-              type: "text",
-              text: `Command blocked: ${securityResult.error}\nRisk Level: ${securityResult.riskLevel}`
-            }],
+            content: [
+              {
+                type: "text",
+                text: `Command blocked: ${securityResult.error}\nRisk Level: ${securityResult.riskLevel}`,
+              },
+            ],
             isError: true,
           };
         }
 
         if (!securityResult.success) {
           return {
-            content: [{
-              type: "text",
-              text: `Command failed: ${securityResult.error}`
-            }],
+            content: [
+              {
+                type: "text",
+                text: `Command failed: ${securityResult.error}`,
+              },
+            ],
             isError: true,
           };
         }

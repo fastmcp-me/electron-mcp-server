@@ -47,10 +47,15 @@ export async function sendCommandToElectron(
         break;
 
       case "click_button":
+        // Validate and escape selector input
+        const selector = args?.selector || "button";
+        if (selector.includes('javascript:') || selector.includes('<script')) {
+          return "Invalid selector: contains dangerous content";
+        }
+        const escapedSelector = JSON.stringify(selector);
+        
         javascriptCode = `
-          const button = document.querySelector('${
-            args?.selector || "button"
-          }');
+          const button = document.querySelector(${escapedSelector});
           if (button && !button.disabled) {
             // Enhanced duplicate prevention
             const buttonId = button.id || button.className || 'button';
@@ -201,9 +206,11 @@ export async function sendCommandToElectron(
               window._mcpExecuting[codeHash] = true;
               
               let result;
-              ${rawCode.trim().startsWith("() =>") || rawCode.trim().startsWith("function") 
-                ? `result = (${rawCode})();`
-                : `result = (function() { ${rawCode} })();`
+              ${
+                rawCode.trim().startsWith("() =>") ||
+                rawCode.trim().startsWith("function")
+                  ? `result = (${rawCode})();`
+                  : `result = (function() { ${rawCode} })();`
               }
               
               setTimeout(() => {
@@ -241,27 +248,39 @@ export async function sendCommandToElectron(
     }
 
     const rawResult = await executeInElectron(javascriptCode, target);
-    
+
     // Try to parse structured response from enhanced eval
     if (command.toLowerCase() === "eval") {
       try {
         const parsedResult = JSON.parse(rawResult);
-        if (parsedResult && typeof parsedResult === 'object' && 'success' in parsedResult) {
+        if (
+          parsedResult &&
+          typeof parsedResult === "object" &&
+          "success" in parsedResult
+        ) {
           if (!parsedResult.success) {
-            return `❌ Command failed: ${parsedResult.error}${parsedResult.stack ? '\nStack: ' + parsedResult.stack : ''}`;
+            return `❌ Command failed: ${parsedResult.error}${
+              parsedResult.stack ? "\nStack: " + parsedResult.stack : ""
+            }`;
           }
-          return `✅ Command successful${parsedResult.result !== null ? ': ' + JSON.stringify(parsedResult.result) : ''}`;
+          return `✅ Command successful${
+            parsedResult.result !== null
+              ? ": " + JSON.stringify(parsedResult.result)
+              : ""
+          }`;
         }
       } catch (e) {
         // If it's not JSON, treat as regular result
       }
     }
-    
+
     // Handle regular results
-    if (rawResult === 'undefined' || rawResult === 'null' || rawResult === '') {
-      return `⚠️ Command executed but returned ${rawResult || 'empty'} - this may indicate the element wasn't found or the action failed`;
+    if (rawResult === "undefined" || rawResult === "null" || rawResult === "") {
+      return `⚠️ Command executed but returned ${
+        rawResult || "empty"
+      } - this may indicate the element wasn't found or the action failed`;
     }
-    
+
     return `✅ Result: ${rawResult}`;
   } catch (error) {
     throw new Error(

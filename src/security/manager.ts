@@ -84,12 +84,15 @@ export class SecurityManager {
         return this.createBlockedResult(sessionId, startTime, reason, validation.riskLevel);
       }
 
-      // Step 3: Sandboxed Execution (for code execution only)
+      // Step 3: Sandboxed Execution (for JavaScript code execution only, not command dispatch)
       let executionResult: SandboxResult;
-      if (context.operationType === 'command' && this.config.enableSandbox) {
+      if (context.operationType === 'command' && this.config.enableSandbox && 
+          (context.command.includes('(') || context.command.includes('document.') || context.command.includes('window.'))) {
+        // Only sandbox if this looks like actual JavaScript code, not a command name
         executionResult = await this.sandbox.executeCode(validation.sanitizedInput.command);
       } else {
-        // For other operations (screenshot, logs, etc.), skip sandbox
+        // For command names (like 'click_by_text') and other operations, skip sandbox
+        // The actual JavaScript generation and execution happens in the enhanced commands
         executionResult = {
           success: true,
           result: validation.sanitizedInput.command,
