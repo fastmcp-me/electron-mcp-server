@@ -1,16 +1,16 @@
-import { CodeSandbox, SandboxResult } from "./sandbox.js";
-import { InputValidator, ValidationResult } from "./validation.js";
-import { securityLogger, AuditLogEntry } from "./audit.js";
-import { randomUUID } from "crypto";
-import { logger } from "../utils/logger.js";
-import { SecurityLevel, getSecurityConfig, detectSecurityLevel } from "./config.js";
+import { CodeSandbox, SandboxResult } from './sandbox.js';
+import { InputValidator } from './validation.js';
+import { securityLogger, AuditLogEntry } from './audit.js';
+import { randomUUID } from 'crypto';
+import { logger } from '../utils/logger.js';
+import { SecurityLevel, getSecurityConfig, detectSecurityLevel } from './config.js';
 
 export interface SecurityConfig {
   enableSandbox: boolean;
   enableInputValidation: boolean;
   enableAuditLog: boolean;
   enableScreenshotEncryption: boolean;
-  defaultRiskThreshold: "low" | "medium" | "high" | "critical";
+  defaultRiskThreshold: 'low' | 'medium' | 'high' | 'critical';
   sandboxTimeout: number;
   maxExecutionTime: number;
 }
@@ -20,7 +20,7 @@ export interface SecureExecutionContext {
   args?: any;
   sourceIP?: string;
   userAgent?: string;
-  operationType: "command" | "screenshot" | "logs" | "window_info";
+  operationType: 'command' | 'screenshot' | 'logs' | 'window_info';
 }
 
 export interface SecureExecutionResult {
@@ -28,7 +28,7 @@ export interface SecureExecutionResult {
   result?: any;
   error?: string;
   executionTime: number;
-  riskLevel: "low" | "medium" | "high" | "critical";
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
   blocked: boolean;
   sessionId: string;
 }
@@ -41,13 +41,13 @@ export class SecurityManager {
   constructor(config: Partial<SecurityConfig> = {}, securityLevel?: SecurityLevel) {
     this.securityLevel = securityLevel || detectSecurityLevel();
     const defaultConfig = getSecurityConfig(this.securityLevel);
-    
+
     this.config = {
       enableSandbox: true,
       enableInputValidation: true,
       enableAuditLog: true,
       enableScreenshotEncryption: true,
-      defaultRiskThreshold: "medium",
+      defaultRiskThreshold: 'medium',
       sandboxTimeout: 5000,
       maxExecutionTime: 30000,
       ...defaultConfig,
@@ -62,20 +62,20 @@ export class SecurityManager {
       maxMemory: 50 * 1024 * 1024, // 50MB
     });
 
-    logger.info("Security Manager initialized with config:", {
+    logger.info('Security Manager initialized with config:', {
       ...this.config,
-      securityLevel: this.securityLevel
+      securityLevel: this.securityLevel,
     });
   }
 
   setSecurityLevel(level: SecurityLevel) {
     this.securityLevel = level;
     InputValidator.setSecurityLevel(level);
-    
+
     // Update config based on new security level
     const newConfig = getSecurityConfig(level);
     this.config = { ...this.config, ...newConfig };
-    
+
     logger.info(`Security level updated to: ${level}`);
   }
 
@@ -83,9 +83,7 @@ export class SecurityManager {
     return this.securityLevel;
   }
 
-  async executeSecurely(
-    context: SecureExecutionContext
-  ): Promise<SecureExecutionResult> {
+  async executeSecurely(context: SecureExecutionContext): Promise<SecureExecutionResult> {
     const sessionId = randomUUID();
     const startTime = Date.now();
 
@@ -102,43 +100,28 @@ export class SecurityManager {
       });
 
       if (!validation.isValid) {
-        const reason = `Input validation failed: ${validation.errors.join(
-          ", "
-        )}`;
-        return this.createBlockedResult(
-          sessionId,
-          startTime,
-          reason,
-          validation.riskLevel
-        );
+        const reason = `Input validation failed: ${validation.errors.join(', ')}`;
+        return this.createBlockedResult(sessionId, startTime, reason, validation.riskLevel);
       }
 
       // Step 2: Risk Assessment
       if (
-        validation.riskLevel === "critical" ||
-        (this.config.defaultRiskThreshold === "high" &&
-          validation.riskLevel === "high")
+        validation.riskLevel === 'critical' ||
+        (this.config.defaultRiskThreshold === 'high' && validation.riskLevel === 'high')
       ) {
         const reason = `Risk level too high: ${validation.riskLevel}`;
-        return this.createBlockedResult(
-          sessionId,
-          startTime,
-          reason,
-          validation.riskLevel
-        );
+        return this.createBlockedResult(sessionId, startTime, reason, validation.riskLevel);
       }
 
       // Step 3: Sandboxed Execution (for JavaScript code execution only, not command dispatch)
       let executionResult: SandboxResult;
       if (
-        context.operationType === "command" &&
+        context.operationType === 'command' &&
         this.config.enableSandbox &&
         this.shouldSandboxCommand(context.command)
       ) {
         // Only sandbox if this looks like actual JavaScript code, not a command name
-        executionResult = await this.sandbox.executeCode(
-          validation.sanitizedInput.command
-        );
+        executionResult = await this.sandbox.executeCode(validation.sanitizedInput.command);
       } else {
         // For command names (like 'click_by_text') and other operations, skip sandbox
         // The actual JavaScript generation and execution happens in the enhanced commands
@@ -177,7 +160,7 @@ export class SecurityManager {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         executionTime: Date.now() - startTime,
-        riskLevel: "high",
+        riskLevel: 'high',
         blocked: false,
         sessionId,
       };
@@ -193,7 +176,7 @@ export class SecurityManager {
 
   updateConfig(newConfig: Partial<SecurityConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    logger.info("Security configuration updated:", newConfig);
+    logger.info('Security configuration updated:', newConfig);
   }
 
   getConfig(): SecurityConfig {
@@ -205,7 +188,7 @@ export class SecurityManager {
     sessionId: string,
     startTime: number,
     reason: string,
-    riskLevel: "low" | "medium" | "high" | "critical"
+    riskLevel: 'low' | 'medium' | 'high' | 'critical',
   ): SecureExecutionResult {
     return {
       success: false,
@@ -219,7 +202,7 @@ export class SecurityManager {
 
   private async logSecurityEvent(
     context: SecureExecutionContext,
-    result: SecureExecutionResult
+    result: SecureExecutionResult,
   ): Promise<void> {
     const logEntry: AuditLogEntry = {
       timestamp: new Date().toISOString(),
@@ -250,21 +233,21 @@ export class SecurityManager {
 
     // Sandbox if it looks like JavaScript code
     const jsIndicators = [
-      "(", // Function calls
-      "document.", // DOM access
-      "window.", // Window object access
-      "const ", // Variable declarations
-      "let ", // Variable declarations
-      "var ", // Variable declarations
-      "function", // Function definitions
-      "=>", // Arrow functions
-      "eval(", // Direct eval calls
-      "new ", // Object instantiation
-      "this.", // Object method calls
-      "=", // Assignments (but not comparison)
-      ";", // Statement separators
-      "{", // Code blocks
-      "return", // Return statements
+      '(', // Function calls
+      'document.', // DOM access
+      'window.', // Window object access
+      'const ', // Variable declarations
+      'let ', // Variable declarations
+      'var ', // Variable declarations
+      'function', // Function definitions
+      '=>', // Arrow functions
+      'eval(', // Direct eval calls
+      'new ', // Object instantiation
+      'this.', // Object method calls
+      '=', // Assignments (but not comparison)
+      ';', // Statement separators
+      '{', // Code blocks
+      'return', // Return statements
     ];
 
     return jsIndicators.some((indicator) => command.includes(indicator));
@@ -281,8 +264,7 @@ export class SecurityManager {
     // - No spaces except between simple arguments
     // - No JavaScript syntax
 
-    const simpleCommandPattern =
-      /^[a-zA-Z_][a-zA-Z0-9_-]*(\s+[a-zA-Z0-9_-]+)*$/;
+    const simpleCommandPattern = /^[a-zA-Z_][a-zA-Z0-9_-]*(\s+[a-zA-Z0-9_-]+)*$/;
     return simpleCommandPattern.test(command.trim());
   }
 }

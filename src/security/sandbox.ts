@@ -1,8 +1,8 @@
-import { spawn } from "child_process";
-import { promises as fs } from "fs";
-import { join } from "path";
-import { randomUUID } from "crypto";
-import { logger } from "../utils/logger.js";
+import { spawn } from 'child_process';
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import { randomUUID } from 'crypto';
+import { logger } from '../utils/logger.js';
 
 export interface SandboxOptions {
   timeout?: number;
@@ -20,44 +20,44 @@ export interface SandboxResult {
 }
 
 const DEFAULT_BLACKLISTED_FUNCTIONS = [
-  "eval",
-  "Function",
-  "setTimeout",
-  "setInterval",
-  "setImmediate",
-  "require",
-  "import",
-  "process",
-  "global",
-  "globalThis",
-  "__dirname",
-  "__filename",
-  "Buffer",
-  "XMLHttpRequest",
-  "fetch",
-  "WebSocket",
+  'eval',
+  'Function',
+  'setTimeout',
+  'setInterval',
+  'setImmediate',
+  'require',
+  'import',
+  'process',
+  'global',
+  'globalThis',
+  '__dirname',
+  '__filename',
+  'Buffer',
+  'XMLHttpRequest',
+  'fetch',
+  'WebSocket',
 ];
 
 const DEFAULT_BLACKLISTED_OBJECTS = [
-  "fs",
-  "child_process",
-  "cluster",
-  "crypto",
-  "dgram",
-  "dns",
-  "http",
-  "https",
-  "net",
-  "os",
-  "path",
-  "stream",
-  "tls",
-  "url",
-  "util",
-  "v8",
-  "vm",
-  "worker_threads",
-  "zlib",
+  'fs',
+  'child_process',
+  'cluster',
+  'crypto',
+  'dgram',
+  'dns',
+  'http',
+  'https',
+  'net',
+  'os',
+  'path',
+  'stream',
+  'tls',
+  'url',
+  'util',
+  'v8',
+  'vm',
+  'worker_threads',
+  'zlib',
 ];
 
 export class CodeSandbox {
@@ -87,7 +87,7 @@ export class CodeSandbox {
       if (!validation.isValid) {
         return {
           success: false,
-          error: `Code validation failed: ${validation.errors.join(", ")}`,
+          error: `Code validation failed: ${validation.errors.join(', ')}`,
           executionTime: Date.now() - startTime,
         };
       }
@@ -96,9 +96,7 @@ export class CodeSandbox {
       const result = await this.executeInIsolation(code, sessionId);
 
       const executionTime = Date.now() - startTime;
-      logger.info(
-        `Sandboxed execution completed [${sessionId}] in ${executionTime}ms`
-      );
+      logger.info(`Sandboxed execution completed [${sessionId}] in ${executionTime}ms`);
 
       return {
         success: true,
@@ -122,7 +120,7 @@ export class CodeSandbox {
 
     // Check for blacklisted functions
     for (const func of this.options.blacklistedFunctions) {
-      const regex = new RegExp(`\\b${func}\\s*\\(`, "g");
+      const regex = new RegExp(`\\b${func}\\s*\\(`, 'g');
       if (regex.test(code)) {
         errors.push(`Forbidden function: ${func}`);
       }
@@ -130,7 +128,7 @@ export class CodeSandbox {
 
     // Check for blacklisted objects
     for (const obj of DEFAULT_BLACKLISTED_OBJECTS) {
-      const regex = new RegExp(`\\b${obj}\\b`, "g");
+      const regex = new RegExp(`\\b${obj}\\b`, 'g');
       if (regex.test(code)) {
         errors.push(`Forbidden module/object: ${obj}`);
       }
@@ -160,17 +158,14 @@ export class CodeSandbox {
     };
   }
 
-  private async executeInIsolation(
-    code: string,
-    sessionId: string
-  ): Promise<any> {
+  private async executeInIsolation(code: string, sessionId: string): Promise<any> {
     // Create a secure wrapper script
     const wrapperCode = this.createSecureWrapper(code);
 
     // Write to temporary file
-    const tempDir = join(process.cwd(), "temp", sessionId);
+    const tempDir = join(process.cwd(), 'temp', sessionId);
     await fs.mkdir(tempDir, { recursive: true });
-    const scriptPath = join(tempDir, "script.cjs"); // Use .cjs for CommonJS
+    const scriptPath = join(tempDir, 'script.cjs'); // Use .cjs for CommonJS
 
     try {
       await fs.writeFile(scriptPath, wrapperCode);
@@ -187,16 +182,13 @@ export class CodeSandbox {
 
         // Also try to clean up the parent temp directory if it's empty
         try {
-          const parentTempDir = join(process.cwd(), "temp");
+          const parentTempDir = join(process.cwd(), 'temp');
           await fs.rmdir(parentTempDir);
         } catch {
           // Ignore if not empty or doesn't exist
         }
       } catch (cleanupError) {
-        logger.warn(
-          `Failed to cleanup temp files for session ${sessionId}:`,
-          cleanupError
-        );
+        logger.warn(`Failed to cleanup temp files for session ${sessionId}:`, cleanupError);
       }
     }
   }
@@ -254,23 +246,23 @@ try {
 
   private executeInProcess(scriptPath: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      const child = spawn("node", [scriptPath], {
-        stdio: ["ignore", "pipe", "pipe"],
+      const child = spawn('node', [scriptPath], {
+        stdio: ['ignore', 'pipe', 'pipe'],
         timeout: this.options.timeout,
       });
 
-      let stdout = "";
-      let stderr = "";
+      let stdout = '';
+      let stderr = '';
 
-      child.stdout.on("data", (data) => {
+      child.stdout.on('data', (data) => {
         stdout += data.toString();
       });
 
-      child.stderr.on("data", (data) => {
+      child.stderr.on('data', (data) => {
         stderr += data.toString();
       });
 
-      child.on("close", (code) => {
+      child.on('close', (code) => {
         if (code === 0) {
           try {
             const result = JSON.parse(stdout);
@@ -280,16 +272,14 @@ try {
               reject(new Error(result.error));
             }
           } catch (parseError) {
-            reject(
-              new Error(`Failed to parse execution result: ${parseError}`)
-            );
+            reject(new Error(`Failed to parse execution result: ${parseError}`));
           }
         } else {
           reject(new Error(`Process exited with code ${code}: ${stderr}`));
         }
       });
 
-      child.on("error", (error) => {
+      child.on('error', (error) => {
         reject(error);
       });
     });

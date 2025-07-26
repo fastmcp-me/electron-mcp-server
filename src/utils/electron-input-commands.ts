@@ -16,7 +16,7 @@ function escapeJavaScriptString(input: string): string {
 function validateInputParams(
   selector: string,
   value: string,
-  searchText: string
+  searchText: string,
 ): {
   isValid: boolean;
   sanitized: { selector: string; value: string; searchText: string };
@@ -28,30 +28,23 @@ function validateInputParams(
   let sanitizedSearchText = searchText;
 
   // Validate selector
-  if (selector.includes("javascript:"))
-    warnings.push("Selector contains javascript: protocol");
-  if (selector.includes("<script"))
-    warnings.push("Selector contains script tags");
-  if (selector.length > 500) warnings.push("Selector is unusually long");
+  if (selector.includes('javascript:')) warnings.push('Selector contains javascript: protocol');
+  if (selector.includes('<script')) warnings.push('Selector contains script tags');
+  if (selector.length > 500) warnings.push('Selector is unusually long');
 
   // Validate value
-  if (value.includes("<script")) warnings.push("Value contains script tags");
-  if (value.length > 10000) warnings.push("Value is unusually long");
+  if (value.includes('<script')) warnings.push('Value contains script tags');
+  if (value.length > 10000) warnings.push('Value is unusually long');
 
   // Validate search text
-  if (searchText.includes("<script"))
-    warnings.push("Search text contains script tags");
-  if (searchText.length > 1000) warnings.push("Search text is unusually long");
+  if (searchText.includes('<script')) warnings.push('Search text contains script tags');
+  if (searchText.length > 1000) warnings.push('Search text is unusually long');
 
   // Basic sanitization
-  sanitizedSelector = sanitizedSelector
-    .replace(/javascript:/gi, "")
-    .substring(0, 500);
-  sanitizedValue = sanitizedValue
-    .replace(/<script[^>]*>.*?<\/script>/gi, "")
-    .substring(0, 10000);
+  sanitizedSelector = sanitizedSelector.replace(/javascript:/gi, '').substring(0, 500);
+  sanitizedValue = sanitizedValue.replace(/<script[^>]*>.*?<\/script>/gi, '').substring(0, 10000);
   sanitizedSearchText = sanitizedSearchText
-    .replace(/<script[^>]*>.*?<\/script>/gi, "")
+    .replace(/<script[^>]*>.*?<\/script>/gi, '')
     .substring(0, 1000);
 
   return {
@@ -71,22 +64,20 @@ function validateInputParams(
 export function generateFillInputCommand(
   selector: string,
   value: string,
-  searchText: string
+  searchText: string,
 ): string {
   // Validate and sanitize inputs
   const validation = validateInputParams(selector, value, searchText);
   if (!validation.isValid) {
     return `(function() { return "Security validation failed: ${validation.warnings.join(
-      ", "
+      ', ',
     )}"; })()`;
   }
 
   // Escape all inputs to prevent injection
   const escapedSelector = escapeJavaScriptString(validation.sanitized.selector);
   const escapedValue = escapeJavaScriptString(validation.sanitized.value);
-  const escapedSearchText = escapeJavaScriptString(
-    validation.sanitized.searchText
-  );
+  const escapedSearchText = escapeJavaScriptString(validation.sanitized.searchText);
 
   return `
     (function() {
@@ -405,16 +396,12 @@ export function generateFillInputCommand(
 /**
  * Generate the enhanced select_option command
  */
-export function generateSelectOptionCommand(
-  selector: string,
-  value: string,
-  text: string
-): string {
+export function generateSelectOptionCommand(selector: string, value: string, text: string): string {
   // Validate and sanitize inputs
   const validation = validateInputParams(selector, value, text);
   if (!validation.isValid) {
     return `(function() { return "Security validation failed: ${validation.warnings.join(
-      ", "
+      ', ',
     )}"; })()`;
   }
 

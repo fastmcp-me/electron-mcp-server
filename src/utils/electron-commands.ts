@@ -23,16 +23,14 @@ function validateTextInput(text: string): {
   let sanitized = text;
 
   // Check for suspicious patterns
-  if (text.includes("javascript:"))
-    warnings.push("Contains javascript: protocol");
-  if (text.includes("<script")) warnings.push("Contains script tags");
-  if (text.match(/['"]\s*;\s*/))
-    warnings.push("Contains potential code injection");
-  if (text.length > 1000) warnings.push("Input text is unusually long");
+  if (text.includes('javascript:')) warnings.push('Contains javascript: protocol');
+  if (text.includes('<script')) warnings.push('Contains script tags');
+  if (text.match(/['"]\s*;\s*/)) warnings.push('Contains potential code injection');
+  if (text.length > 1000) warnings.push('Input text is unusually long');
 
   // Basic sanitization - remove potentially dangerous content
-  sanitized = sanitized.replace(/javascript:/gi, "");
-  sanitized = sanitized.replace(/<script[^>]*>.*?<\/script>/gi, "");
+  sanitized = sanitized.replace(/javascript:/gi, '');
+  sanitized = sanitized.replace(/<script[^>]*>.*?<\/script>/gi, '');
   sanitized = sanitized.substring(0, 1000); // Limit length
 
   return {
@@ -346,7 +344,7 @@ export function generateClickByTextCommand(text: string): string {
   const validation = validateTextInput(text);
   if (!validation.isValid) {
     return `(function() { return "Security validation failed: ${validation.warnings.join(
-      ", "
+      ', ',
     )}"; })()`;
   }
 

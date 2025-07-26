@@ -1,22 +1,20 @@
-import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
-import { ToolName } from "./tools.js";
+import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
+import { ToolName } from './tools.js';
 import {
   SendCommandToElectronSchema,
   TakeScreenshotSchema,
   ReadElectronLogsSchema,
   GetElectronWindowInfoSchema,
-} from "./schemas.js";
-import { sendCommandToElectron } from "./utils/electron-enhanced-commands.js";
-import { getElectronWindowInfo } from "./utils/electron-discovery.js";
-import { readElectronLogs } from "./utils/electron-logs.js";
-import { takeScreenshot } from "./screenshot.js";
-import { logger } from "./utils/logger.js";
-import { securityManager } from "./security/manager.js";
+} from './schemas.js';
+import { sendCommandToElectron } from './utils/electron-enhanced-commands.js';
+import { getElectronWindowInfo } from './utils/electron-discovery.js';
+import { readElectronLogs } from './utils/electron-logs.js';
+import { takeScreenshot } from './screenshot.js';
+import { logger } from './utils/logger.js';
+import { securityManager } from './security/manager.js';
 
-export async function handleToolCall(
-  request: z.infer<typeof CallToolRequestSchema>
-) {
+export async function handleToolCall(request: z.infer<typeof CallToolRequestSchema>) {
   const { name, arguments: args } = request.params;
 
   // Extract request metadata for security logging
@@ -30,18 +28,18 @@ export async function handleToolCall(
         const { includeChildren } = GetElectronWindowInfoSchema.parse(args);
 
         const securityResult = await securityManager.executeSecurely({
-          command: "get_window_info",
+          command: 'get_window_info',
           args,
           sourceIP,
           userAgent,
-          operationType: "window_info",
+          operationType: 'window_info',
         });
 
         if (securityResult.blocked) {
           return {
             content: [
               {
-                type: "text",
+                type: 'text',
                 text: `Operation blocked: ${securityResult.error}`,
               },
             ],
@@ -53,7 +51,7 @@ export async function handleToolCall(
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: `Window Information:\n\n${JSON.stringify(result, null, 2)}`,
             },
           ],
@@ -64,18 +62,18 @@ export async function handleToolCall(
       case ToolName.TAKE_SCREENSHOT: {
         // Security check for screenshot operation
         const securityResult = await securityManager.executeSecurely({
-          command: "take_screenshot",
+          command: 'take_screenshot',
           args,
           sourceIP,
           userAgent,
-          operationType: "screenshot",
+          operationType: 'screenshot',
         });
 
         if (securityResult.blocked) {
           return {
             content: [
               {
-                type: "text",
+                type: 'text',
                 text: `Screenshot blocked: ${securityResult.error}`,
               },
             ],
@@ -90,29 +88,28 @@ export async function handleToolCall(
 
         if (result.filePath) {
           content.push({
-            type: "text",
+            type: 'text',
             text: `Screenshot saved to: ${result.filePath}`,
           });
         } else {
           content.push({
-            type: "text",
-            text: "Screenshot captured in memory (no file saved)",
+            type: 'text',
+            text: 'Screenshot captured in memory (no file saved)',
           });
         }
 
         // Add the image data for AI evaluation
         content.push({
-          type: "image",
+          type: 'image',
           data: result.base64!,
-          mimeType: "image/png",
+          mimeType: 'image/png',
         });
 
         return { content, isError: false };
       }
 
       case ToolName.SEND_COMMAND_TO_ELECTRON: {
-        const { command, args: commandArgs } =
-          SendCommandToElectronSchema.parse(args);
+        const { command, args: commandArgs } = SendCommandToElectronSchema.parse(args);
 
         // Execute command through security manager
         const securityResult = await securityManager.executeSecurely({
@@ -120,14 +117,14 @@ export async function handleToolCall(
           args: commandArgs,
           sourceIP,
           userAgent,
-          operationType: "command",
+          operationType: 'command',
         });
 
         if (securityResult.blocked) {
           return {
             content: [
               {
-                type: "text",
+                type: 'text',
                 text: `Command blocked: ${securityResult.error}\nRisk Level: ${securityResult.riskLevel}`,
               },
             ],
@@ -139,7 +136,7 @@ export async function handleToolCall(
           return {
             content: [
               {
-                type: "text",
+                type: 'text',
                 text: `Command failed: ${securityResult.error}`,
               },
             ],
@@ -150,7 +147,7 @@ export async function handleToolCall(
         // Execute the actual command if security checks pass
         const result = await sendCommandToElectron(command, commandArgs);
         return {
-          content: [{ type: "text", text: result }],
+          content: [{ type: 'text', text: result }],
           isError: false,
         };
       }
@@ -163,7 +160,7 @@ export async function handleToolCall(
           return {
             content: [
               {
-                type: "text",
+                type: 'text',
                 text: `Following logs (${logType}). This is a snapshot of recent logs:\n\n${logs}`,
               },
             ],
@@ -174,7 +171,7 @@ export async function handleToolCall(
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: `Electron logs (${logType}):\n\n${logs}`,
             },
           ],
@@ -186,7 +183,7 @@ export async function handleToolCall(
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: `Unknown tool: ${name}`,
             },
           ],
@@ -206,7 +203,7 @@ export async function handleToolCall(
     return {
       content: [
         {
-          type: "text",
+          type: 'text',
           text: `Error executing ${name}: ${errorMessage}`,
         },
       ],
