@@ -36,6 +36,13 @@ const DEFAULT_BLACKLISTED_FUNCTIONS = [
   'XMLHttpRequest',
   'fetch',
   'WebSocket',
+  'Worker',
+  'SharedWorker',
+  'ServiceWorker',
+  'importScripts',
+  'postMessage',
+  'close',
+  'open',
 ];
 
 const DEFAULT_BLACKLISTED_OBJECTS = [
@@ -58,6 +65,15 @@ const DEFAULT_BLACKLISTED_OBJECTS = [
   'vm',
   'worker_threads',
   'zlib',
+  'perf_hooks',
+  'inspector',
+  'repl',
+  'readline',
+  'domain',
+  'events',
+  'querystring',
+  'punycode',
+  'constants',
 ];
 
 export class CodeSandbox {
@@ -144,6 +160,18 @@ export class CodeSandbox {
       /process\./g,
       /global\./g,
       /this\.constructor/g,
+      /\[\s*['"`]constructor['"`]\s*\]/g,
+      /\[\s*['"`]__proto__['"`]\s*\]/g,
+      /Function\s*\(/g,
+      /eval\s*\(/g,
+      /window\./g,
+      /document\./g,
+      /location\./g,
+      /history\./g,
+      /navigator\./g,
+      /alert\s*\(/g,
+      /confirm\s*\(/g,
+      /prompt\s*\(/g,
     ];
 
     for (const pattern of dangerousPatterns) {
@@ -197,11 +225,9 @@ export class CodeSandbox {
     return `
 "use strict";
 
-// Create isolated context
-const sandbox = {};
+const vm = require('vm');
 
-// Disable dangerous globals
-const originalGlobal = global;
+// Create isolated context
 const originalProcess = process;
 const originalConsole = console;
 
@@ -209,25 +235,47 @@ const originalConsole = console;
 const safeConsole = {
   log: (...args) => originalConsole.log('[SANDBOX]', ...args),
   error: (...args) => originalConsole.error('[SANDBOX]', ...args),
-  warn: (...args) => originalConsole.warn('[SANDBOX]', ...args)
+  warn: (...args) => originalConsole.warn('[SANDBOX]', ...args),
+  info: (...args) => originalConsole.info('[SANDBOX]', ...args),
+  debug: (...args) => originalConsole.debug('[SANDBOX]', ...args)
 };
 
-// Override dangerous globals
-global = undefined;
-process = undefined;
-require = undefined;
-module = undefined;
-exports = undefined;
-__dirname = undefined;
-__filename = undefined;
+// Create a secure context with only safe globals
+const sandboxContext = vm.createContext({
+  console: safeConsole,
+  Math: Math,
+  Date: Date,
+  JSON: JSON,
+  parseInt: parseInt,
+  parseFloat: parseFloat,
+  isNaN: isNaN,
+  isFinite: isFinite,
+  String: String,
+  Number: Number,
+  Boolean: Boolean,
+  Array: Array,
+  Object: Object,
+  RegExp: RegExp,
+  Error: Error,
+  TypeError: TypeError,
+  RangeError: RangeError,
+  SyntaxError: SyntaxError,
+  // Provide a safe setTimeout that's actually synchronous for safety
+  setTimeout: (fn, delay) => {
+    if (typeof fn === 'function' && delay === 0) {
+      return fn();
+    }
+    throw new Error('setTimeout not available in sandbox');
+  }
+});
 
 try {
-  // Execute user code in try-catch
-  const result = (function() {
-    const console = safeConsole;
-    // Use eval to properly execute the user code
-    return eval(${JSON.stringify(userCode)});
-  })();
+  // Execute user code in isolated VM context
+  const result = vm.runInContext(${JSON.stringify(userCode)}, sandboxContext, {
+    timeout: 5000, // 5 second timeout
+    displayErrors: true,
+    breakOnSigint: true
+  });
   
   // Send result back
   originalProcess.stdout.write(JSON.stringify({
