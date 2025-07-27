@@ -1,4 +1,5 @@
 import { SecurityConfig } from './manager.js';
+import { logger } from '../utils/logger.js';
 
 export enum SecurityLevel {
   STRICT = 'strict', // Maximum security - blocks most function calls
@@ -103,36 +104,26 @@ export function getSecurityConfig(
 
 /**
  * Environment-based security level detection
+ * ALWAYS defaults to STRICT for maximum security
  */
 export function detectSecurityLevel(): SecurityLevel {
-  const env = process.env.NODE_ENV?.toLowerCase();
-  const mcpSecurity = process.env.MCP_SECURITY_LEVEL?.toLowerCase();
-
-  if (mcpSecurity) {
-    switch (mcpSecurity) {
-      case 'strict':
-        return SecurityLevel.STRICT;
-      case 'balanced':
-        return SecurityLevel.BALANCED;
-      case 'permissive':
-        return SecurityLevel.PERMISSIVE;
-      case 'development':
-        return SecurityLevel.DEVELOPMENT;
-    }
-  }
-
-  // Default based on environment
-  switch (env) {
-    case 'development':
-    case 'dev':
-      return SecurityLevel.DEVELOPMENT;
-    case 'test':
-    case 'testing':
-      return SecurityLevel.PERMISSIVE;
-    case 'production':
-    case 'prod':
-      return SecurityLevel.STRICT;
-    default:
+  // Always start with the most secure level
+  const explicitLevel = process.env.MCP_SECURITY_LEVEL?.toLowerCase();
+  
+  // Only allow explicit downgrade via environment variable
+  switch (explicitLevel) {
+    case 'balanced':
+      logger.warn('Security level set to BALANCED via MCP_SECURITY_LEVEL environment variable');
       return SecurityLevel.BALANCED;
+    case 'permissive':
+      logger.warn('Security level set to PERMISSIVE via MCP_SECURITY_LEVEL environment variable');
+      return SecurityLevel.PERMISSIVE;
+    case 'development':
+      logger.warn('Security level set to DEVELOPMENT via MCP_SECURITY_LEVEL environment variable - USE ONLY FOR DEVELOPMENT!');
+      return SecurityLevel.DEVELOPMENT;
+    case 'strict':
+    default:
+      // Default to strict security - never auto-detect based on environment
+      return SecurityLevel.STRICT;
   }
 }

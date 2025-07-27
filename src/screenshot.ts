@@ -37,6 +37,7 @@ try {
 interface EncryptedScreenshot {
   encryptedData: string;
   iv: string;
+  salt: string; // Add salt to be stored with encrypted data
   timestamp: string;
 }
 
@@ -148,6 +149,7 @@ function encryptScreenshotData(buffer: Buffer): EncryptedScreenshot {
     return {
       encryptedData: encrypted,
       iv: iv.toString('hex'),
+      salt: salt.toString('hex'), // Store salt with encrypted data
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
@@ -156,6 +158,7 @@ function encryptScreenshotData(buffer: Buffer): EncryptedScreenshot {
     return {
       encryptedData: buffer.toString('base64'),
       iv: '',
+      salt: '', // Empty salt for fallback
       timestamp: new Date().toISOString(),
     };
   }

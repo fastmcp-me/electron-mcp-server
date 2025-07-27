@@ -139,51 +139,71 @@ export async function sendCommandToElectron(command: string, args?: CommandArgs)
         `;
         break;
 
-      case 'send_keyboard_shortcut':
+      case "send_keyboard_shortcut":
         // Secure keyboard shortcut sending
-        const key = args?.text || '';
-        const validKeys = [
-          'Enter',
-          'Escape',
-          'Tab',
-          'Space',
-          'ArrowUp',
-          'ArrowDown',
-          'ArrowLeft',
-          'ArrowRight',
-        ];
-
+        const key = args?.text || "";
+        const validKeys = ['Enter', 'Escape', 'Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+        
         // Parse shortcut like "Ctrl+N" or "Meta+N"
-        const parts = key.split('+').map((p) => p.trim());
+        const parts = key.split('+').map(p => p.trim());
         const keyPart = parts[parts.length - 1];
         const modifiers = parts.slice(0, -1);
-
+        
+        // Helper function to get proper KeyboardEvent.code value
+        function getKeyCode(key: string): string {
+          // Special keys mapping
+          const specialKeys: Record<string, string> = {
+            'Enter': 'Enter',
+            'Escape': 'Escape', 
+            'Tab': 'Tab',
+            'Space': 'Space',
+            'ArrowUp': 'ArrowUp',
+            'ArrowDown': 'ArrowDown', 
+            'ArrowLeft': 'ArrowLeft',
+            'ArrowRight': 'ArrowRight',
+            'Backspace': 'Backspace',
+            'Delete': 'Delete',
+            'Home': 'Home',
+            'End': 'End',
+            'PageUp': 'PageUp',
+            'PageDown': 'PageDown'
+          };
+          
+          if (specialKeys[key]) {
+            return specialKeys[key];
+          }
+          
+          // Single character keys
+          if (key.length === 1) {
+            const upperKey = key.toUpperCase();
+            if (upperKey >= 'A' && upperKey <= 'Z') {
+              return `Key${upperKey}`;
+            }
+            if (upperKey >= '0' && upperKey <= '9') {
+              return `Digit${upperKey}`;
+            }
+          }
+          
+          return `Key${key.toUpperCase()}`;
+        }
+        
         if (keyPart.length === 1 || validKeys.includes(keyPart)) {
-          const modifierProps = modifiers
-            .map((mod) => {
-              switch (mod.toLowerCase()) {
-                case 'ctrl':
-                  return 'ctrlKey: true';
-                case 'shift':
-                  return 'shiftKey: true';
-                case 'alt':
-                  return 'altKey: true';
-                case 'meta':
-                case 'cmd':
-                  return 'metaKey: true';
-                default:
-                  return '';
-              }
-            })
-            .filter(Boolean)
-            .join(', ');
-
+          const modifierProps = modifiers.map(mod => {
+            switch(mod.toLowerCase()) {
+              case 'ctrl': return 'ctrlKey: true';
+              case 'shift': return 'shiftKey: true';
+              case 'alt': return 'altKey: true';
+              case 'meta': case 'cmd': return 'metaKey: true';
+              default: return '';
+            }
+          }).filter(Boolean).join(', ');
+          
           javascriptCode = `
             (function() {
               try {
                 const event = new KeyboardEvent('keydown', {
                   key: '${keyPart}',
-                  code: 'Key${keyPart.toUpperCase()}',
+                  code: '${getKeyCode(keyPart)}',
                   ${modifierProps},
                   bubbles: true,
                   cancelable: true
@@ -196,7 +216,7 @@ export async function sendCommandToElectron(command: string, args?: CommandArgs)
             })();
           `;
         } else {
-          return `Invalid key: ${keyPart}. Use single characters or: ${validKeys.join(', ')}`;
+          return `Invalid keyboard shortcut: ${key}`;
         }
         break;
 

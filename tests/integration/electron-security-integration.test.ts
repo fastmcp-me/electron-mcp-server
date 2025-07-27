@@ -1,14 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import {
-  createTestElectronApp,
-  waitForElectronApp,
-  type TestElectronApp,
-} from "./helpers/test-electron-app.js";
-import { handleToolCall } from "../src/handlers.js";
-import { ToolName } from "../src/tools.js";
+import { TestHelpers, type TestElectronApp, TEST_CONFIG } from "../conftest.js";
+import { handleToolCall } from "../../src/handlers.js";
+import { ToolName } from "../../src/tools.js";
 import { join } from "path";
 import { promises as fs } from "fs";
 import { tmpdir } from "os";
+import { logger } from "../../src/utils/logger.js";
 
 // Helper function to create proper MCP request format
 function createMCPRequest(toolName: string, args: any = {}) {
@@ -33,19 +30,13 @@ describe("Electron Integration & Security Tests", () => {
     );
     await fs.mkdir(globalTestDir, { recursive: true });
 
-    // Start test Electron app with a specific port range
-    testApp = await createTestElectronApp(9300); // Use port range 9300+ to avoid conflicts
+    // Create test Electron app
+    testApp = await TestHelpers.createTestElectronApp();
 
-    // Wait for app to be ready using the actual port from testApp
-    const isReady = await waitForElectronApp(testApp.port, 15000);
-    if (!isReady) {
-      throw new Error("Test Electron app failed to become ready");
-    }
-
-    console.log(
-      "✅ Test Electron app ready for integration and security testing"
+    logger.info(
+      `✅ Test Electron app ready for integration and security testing`
     );
-  }, 30000);
+  });
 
   afterAll(async () => {
     if (testApp) {
@@ -563,15 +554,9 @@ describe("Electron Integration & Security Tests", () => {
     });
 
     it("should block risky operations by default", async () => {
-      const riskyCommands = [
-        'eval:require("fs").writeFileSync("/tmp/test", "malicious")',
-        "eval:process.exit(1)",
-        'eval:require("child_process").exec("rm -rf /")',
-      ];
-
-      for (const riskyCode of riskyCommands) {
+      for (const riskyCode of TEST_CONFIG.SECURITY.RISKY_COMMANDS.slice(0, 3)) {
         const result = await handleToolCall(
-          createMCPRequest(ToolName.SEND_COMMAND_TO_ELECTRON, {
+          TestHelpers.createMCPRequest(ToolName.SEND_COMMAND_TO_ELECTRON, {
             command: "eval",
             args: riskyCode,
           })

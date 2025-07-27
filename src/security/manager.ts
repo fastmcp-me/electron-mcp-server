@@ -37,6 +37,7 @@ export class SecurityManager {
   private config: SecurityConfig;
   private sandbox: CodeSandbox;
   private securityLevel: SecurityLevel;
+  private sandboxCache = new Map<string, boolean>();
 
   constructor(config: Partial<SecurityConfig> = {}, securityLevel?: SecurityLevel) {
     this.securityLevel = securityLevel || detectSecurityLevel();
@@ -225,7 +226,26 @@ export class SecurityManager {
    * @param command The command to check
    * @returns true if the command should be sandboxed
    */
-  private shouldSandboxCommand(command: string): boolean {
+  shouldSandboxCommand(command: string): boolean {
+    // Check cache first for performance
+    if (this.sandboxCache.has(command)) {
+      return this.sandboxCache.get(command)!;
+    }
+
+    const result = this._shouldSandboxCommand(command);
+    
+    // Cache result (limit cache size to prevent memory leaks)
+    if (this.sandboxCache.size < 1000) {
+      this.sandboxCache.set(command, result);
+    }
+    
+    return result;
+  }
+
+  /**
+   * Internal method to determine if a command should be sandboxed
+   */
+  private _shouldSandboxCommand(command: string): boolean {
     // Skip sandboxing for simple command names (like MCP tool names)
     if (this.isSimpleCommandName(command)) {
       return false;
