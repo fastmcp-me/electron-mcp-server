@@ -10,9 +10,11 @@ A powerful Model Context Protocol (MCP) server that provides comprehensive Elect
 
 See the Electron MCP Server in action:
 
-https://github.com/user-attachments/assets/demo.mp4
+![Demo Video](./assets/demo.mp4)
 
 *Watch how easy it is to automate Electron applications with AI-powered MCP commands.*
+
+> **Note**: To view the demo video, please download and place your `demo.mp4` file in the `assets/` directory.
 
 ## 🎯 What Makes This Special
 
