@@ -47,6 +47,16 @@ Enhanced UI interaction commands:
 - 'get_title', 'get_url', 'get_body_text': Basic page information
 - 'eval': Execute custom JavaScript code with enhanced error reporting
 
+IMPORTANT: Arguments must be passed as an object with the correct properties:
+
+Examples:
+- click_by_selector: {"selector": "button.submit-btn"}
+- click_by_text: {"text": "Submit"}
+- fill_input: {"placeholder": "Enter name", "value": "John Doe"}
+- fill_input: {"selector": "#email", "value": "user@example.com"}
+- send_keyboard_shortcut: {"text": "Enter"}
+- eval: {"code": "document.title"}
+
 Use 'get_page_structure' or 'debug_elements' first to understand available elements, then use specific interaction commands.`,
     inputSchema: zodToJsonSchema(SendCommandToElectronSchema) as ToolInput,
   },

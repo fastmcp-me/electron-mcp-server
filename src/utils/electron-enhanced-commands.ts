@@ -90,12 +90,22 @@ export async function sendCommandToElectron(command: string, args?: CommandArgs)
         break;
 
       case 'click_by_text':
-        javascriptCode = generateClickByTextCommand(args?.text || '');
+        const clickText = args?.text || '';
+        if (!clickText) {
+          return 'ERROR: Missing text. Use: {"text": "button text"}. See MCP_USAGE_GUIDE.md for examples.';
+        }
+        javascriptCode = generateClickByTextCommand(clickText);
         break;
 
       case 'click_by_selector':
         // Secure selector-based clicking
         const clickSelector = args?.selector || '';
+
+        // Better error message for common mistake
+        if (!clickSelector) {
+          return 'ERROR: Missing selector. Use: {"selector": "your-css-selector"}. See MCP_USAGE_GUIDE.md for examples.';
+        }
+
         if (clickSelector.includes('javascript:') || clickSelector.includes('<script')) {
           return 'Invalid selector: contains dangerous content';
         }
@@ -274,9 +284,13 @@ export async function sendCommandToElectron(command: string, args?: CommandArgs)
         break;
 
       case 'fill_input':
+        const inputValue = args?.value || args?.text || '';
+        if (!inputValue) {
+          return 'ERROR: Missing value. Use: {"value": "text", "selector": "..."} or {"value": "text", "placeholder": "..."}. See MCP_USAGE_GUIDE.md for examples.';
+        }
         javascriptCode = generateFillInputCommand(
           args?.selector || '',
-          args?.value || args?.text || '',
+          inputValue,
           args?.text || args?.placeholder || '',
         );
         break;

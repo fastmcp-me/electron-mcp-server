@@ -6,6 +6,14 @@
 
 A powerful Model Context Protocol (MCP) server that provides comprehensive Electron application automation, debugging, and observability capabilities. Supercharge your Electron development workflow with AI-powered automation through Chrome DevTools Protocol integration.
 
+## Demo
+
+See Infinitome in action:
+
+https://github.com/halilural/electron-mcp-server/blob/master/assets/demo.mp4
+
+_Watch how easy it is to create encyclopedias, organize content, and leverage AI-powered insights._
+
 ## 🎯 What Makes This Special
 
 Transform your Electron development experience with **AI-powered automation**:
@@ -40,7 +48,7 @@ Instead of raw JavaScript eval, use these secure commands:
 
 // ✅ Secure element selection
 {
-  "command": "click_by_selector", 
+  "command": "click_by_selector",
   "args": { "selector": "button[title='Create']" }
 }
 
@@ -58,6 +66,91 @@ Instead of raw JavaScript eval, use these secure commands:
 ```
 
 See [SECURITY_CONFIG.md](./SECURITY_CONFIG.md) for detailed security documentation.
+
+## 🎯 Proper MCP Usage Guide
+
+### ⚠️ Critical: Argument Structure
+
+**The most common mistake** when using this MCP server is incorrect argument structure for the `send_command_to_electron` tool.
+
+#### ❌ Wrong (causes "selector is empty" errors):
+
+```javascript
+{
+  "command": "click_by_selector",
+  "args": "button.submit-btn"  // ❌ Raw string - WRONG!
+}
+```
+
+#### ✅ Correct:
+
+```javascript
+{
+  "command": "click_by_selector",
+  "args": {
+    "selector": "button.submit-btn"  // ✅ Object with selector property
+  }
+}
+```
+
+### 📋 Command Argument Reference
+
+| Command                                 | Required Args                                                                       | Example                                          |
+| --------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `click_by_selector`                     | `{"selector": "css-selector"}`                                                      | `{"selector": "button.primary"}`                 |
+| `click_by_text`                         | `{"text": "button text"}`                                                           | `{"text": "Submit"}`                             |
+| `fill_input`                            | `{"value": "text", "selector": "..."}` or `{"value": "text", "placeholder": "..."}` | `{"placeholder": "Enter name", "value": "John"}` |
+| `send_keyboard_shortcut`                | `{"text": "key combination"}`                                                       | `{"text": "Ctrl+N"}`                             |
+| `eval`                                  | `{"code": "javascript"}`                                                            | `{"code": "document.title"}`                     |
+| `get_title`, `get_url`, `get_body_text` | No args needed                                                                      | `{}` or omit args                                |
+
+### 🔄 Recommended Workflow
+
+1. **Inspect**: Start with `get_page_structure` or `debug_elements`
+2. **Target**: Use specific selectors or text-based targeting
+3. **Interact**: Use the appropriate command with correct argument structure
+4. **Verify**: Take screenshots or check page state
+
+```javascript
+// Step 1: Understand the page
+{
+  "command": "get_page_structure"
+}
+
+// Step 2: Click button using text (most reliable)
+{
+  "command": "click_by_text",
+  "args": {
+    "text": "Create New Encyclopedia"
+  }
+}
+
+// Step 3: Fill form field
+{
+  "command": "fill_input",
+  "args": {
+    "placeholder": "Enter encyclopedia name",
+    "value": "AI and Machine Learning"
+  }
+}
+
+// Step 4: Submit with selector
+{
+  "command": "click_by_selector",
+  "args": {
+    "selector": "button[type='submit']"
+  }
+}
+```
+
+### 🐛 Troubleshooting Common Issues
+
+| Error                            | Cause                            | Solution                       |
+| -------------------------------- | -------------------------------- | ------------------------------ |
+| "The provided selector is empty" | Passing string instead of object | Use `{"selector": "..."}`      |
+| "Element not found"              | Wrong selector                   | Use `get_page_structure` first |
+| "Command blocked"                | Security restriction             | Check security level settings  |
+| "Click prevented - too soon"     | Rapid consecutive clicks         | Wait before retrying           |
 
 ## 🛠️ Security Features
 
@@ -257,40 +350,40 @@ Build Electron applications for distribution.
 ```javascript
 // 1. First, understand the page structure
 await send_command_to_electron({
-  command: "get_page_structure",
+  command: 'get_page_structure',
 });
 
 // 2. Click a button by its text (much more reliable than selectors)
 await send_command_to_electron({
-  command: "click_by_text",
+  command: 'click_by_text',
   args: {
-    text: "Login", // Finds buttons containing "Login" in text, aria-label, or title
+    text: 'Login', // Finds buttons containing "Login" in text, aria-label, or title
   },
 });
 
 // 3. Fill inputs by their label or placeholder text
 await send_command_to_electron({
-  command: "fill_input",
+  command: 'fill_input',
   args: {
-    text: "username", // Finds input with label "Username" or placeholder "Enter username"
-    value: "john.doe@example.com",
+    text: 'username', // Finds input with label "Username" or placeholder "Enter username"
+    value: 'john.doe@example.com',
   },
 });
 
 await send_command_to_electron({
-  command: "fill_input",
+  command: 'fill_input',
   args: {
-    text: "password",
-    value: "secretpassword",
+    text: 'password',
+    value: 'secretpassword',
   },
 });
 
 // 4. Select dropdown options by visible text
 await send_command_to_electron({
-  command: "select_option",
+  command: 'select_option',
   args: {
-    text: "country", // Finds select with label containing "country"
-    value: "United States", // Selects option with this text
+    text: 'country', // Finds select with label containing "country"
+    value: 'United States', // Selects option with this text
   },
 });
 
@@ -303,7 +396,7 @@ await take_screenshot();
 ```javascript
 // Find all interactive elements with detailed information
 await send_command_to_electron({
-  command: "find_elements",
+  command: 'find_elements',
 });
 
 // This returns detailed info about every clickable element and input:
@@ -323,7 +416,7 @@ await send_command_to_electron({
 ```javascript
 // Launch app in development mode
 await launch_electron_app({
-  appPath: "/path/to/app",
+  appPath: '/path/to/app',
   devMode: true,
 });
 
@@ -332,7 +425,7 @@ await take_screenshot();
 
 // Click a button programmatically
 await send_command_to_electron({
-  command: "eval",
+  command: 'eval',
   args: {
     code: "document.querySelector('#submit-btn').click()",
   },
@@ -340,7 +433,7 @@ await send_command_to_electron({
 
 // Verify the result
 await send_command_to_electron({
-  command: "get_title",
+  command: 'get_title',
 });
 ```
 
@@ -352,15 +445,15 @@ const windowInfo = await get_electron_window_info();
 
 // Extract application data
 await send_command_to_electron({
-  command: "eval",
+  command: 'eval',
   args: {
-    code: "JSON.stringify(window.appState, null, 2)",
+    code: 'JSON.stringify(window.appState, null, 2)',
   },
 });
 
 // Monitor logs
 await read_electron_logs({
-  logType: "all",
+  logType: 'all',
   lines: 100,
 });
 ```
@@ -370,15 +463,15 @@ await read_electron_logs({
 ```javascript
 // Get system information
 await send_command_to_electron({
-  command: "eval",
+  command: 'eval',
   args: {
-    code: "({memory: performance.memory, timing: performance.timing})",
+    code: '({memory: performance.memory, timing: performance.timing})',
   },
 });
 
 // Take periodic screenshots for visual regression testing
 await take_screenshot({
-  outputPath: "/tests/screenshots/current.png",
+  outputPath: '/tests/screenshots/current.png',
 });
 ```
 
@@ -423,13 +516,12 @@ await take_screenshot({
 For the MCP server to work with your Electron application, you need to enable remote debugging. Add this code to your Electron app's main process:
 
 ```javascript
-const { app } = require("electron");
-const isDev =
-  process.env.NODE_ENV === "development" || process.argv.includes("--dev");
+const { app } = require('electron');
+const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 
 // Enable remote debugging in development mode
 if (isDev) {
-  app.commandLine.appendSwitch("remote-debugging-port", "9222");
+  app.commandLine.appendSwitch('remote-debugging-port', '9222');
 }
 ```
 

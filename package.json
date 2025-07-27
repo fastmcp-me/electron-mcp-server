@@ -1,7 +1,7 @@
 {
   "name": "electron-mcp-server",
   "version": "1.4.0",
-  "description": "MCP server for Electron application automation and management",
+  "description": "MCP server for Electron application automation and management. See MCP_USAGE_GUIDE.md for proper argument structure examples.",
   "main": "dist/index.js",
   "bin": {
     "electron-mcp-server": "dist/index.js"
