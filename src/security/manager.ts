@@ -3,7 +3,7 @@ import { InputValidator } from './validation.js';
 import { securityLogger, AuditLogEntry } from './audit.js';
 import { randomUUID } from 'crypto';
 import { logger } from '../utils/logger.js';
-import { SecurityLevel, getSecurityConfig, detectSecurityLevel } from './config.js';
+import { SecurityLevel, getSecurityConfig, getDefaultSecurityLevel } from './config.js';
 
 export interface SecurityConfig {
   enableSandbox: boolean;
@@ -40,7 +40,7 @@ export class SecurityManager {
   private sandboxCache = new Map<string, boolean>();
 
   constructor(config: Partial<SecurityConfig> = {}, securityLevel?: SecurityLevel) {
-    this.securityLevel = securityLevel || detectSecurityLevel();
+    this.securityLevel = securityLevel || getDefaultSecurityLevel();
     const defaultConfig = getSecurityConfig(this.securityLevel);
 
     this.config = {
@@ -233,12 +233,12 @@ export class SecurityManager {
     }
 
     const result = this._shouldSandboxCommand(command);
-    
+
     // Cache result (limit cache size to prevent memory leaks)
     if (this.sandboxCache.size < 1000) {
       this.sandboxCache.set(command, result);
     }
-    
+
     return result;
   }
 

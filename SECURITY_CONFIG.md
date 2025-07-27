@@ -1,53 +1,24 @@
 # MCP Security Configuration
 
-You can control the security level of the MCP Electron server through environment variables:
+The MCP Electron server uses a **BALANCED** security level that provides an optimal balance between security and functionality.
 
-## Security Levels
+## Security Level: BALANCED (Default)
 
-### STRICT (Maximum Security)
-- Blocks most function calls and DOM manipulation
-- Only allows basic property reading
-- Best for production environments with untrusted input
+The server automatically uses the BALANCED security level, which:
 
-```bash
-export MCP_SECURITY_LEVEL=strict
-```
-
-### BALANCED (Default - Recommended)
 - Allows safe UI interactions and DOM queries
-- Blocks dangerous operations like eval, assignments
-- Good balance between security and functionality
+- Blocks dangerous operations like eval and assignments
+- Provides good balance between security and functionality
+- Cannot be overridden by environment variables for security consistency
 
-```bash
-export MCP_SECURITY_LEVEL=balanced
-```
+## Security Features
 
-### PERMISSIVE (More Functionality)
-- Allows UI interactions, DOM manipulation, and assignments
-- Still blocks dangerous keywords and injection patterns
-- Good for trusted environments
-
-```bash
-export MCP_SECURITY_LEVEL=permissive
-```
-
-### DEVELOPMENT (Minimal Restrictions)
-- Allows most operations for development/testing
-- Minimal security restrictions
-- **DO NOT USE IN PRODUCTION**
-
-```bash
-export MCP_SECURITY_LEVEL=development
-```
-
-## Auto-Detection
-
-If no `MCP_SECURITY_LEVEL` is set, the security level is automatically detected based on `NODE_ENV`:
-
-- `production` → `strict`
-- `test` → `permissive`
-- `development` → `development`
-- Default → `balanced`
+- ✅ Safe UI interactions (clicking, focusing elements)
+- ✅ DOM queries (reading element properties)
+- ✅ Property access (reading values)
+- ❌ Assignment operations (security risk)
+- ❌ Function calls in eval (injection risk)
+- ❌ Constructor calls (potential exploit vector)
 
 ## Usage Examples
 
@@ -57,46 +28,56 @@ Based on your logs, you want to interact with UI elements. Use these secure comm
 
 ```javascript
 // Instead of: document.querySelector('button').click()
-command: "click_by_selector"
-args: { selector: "button[title='Create New Encyclopedia']" }
+command: 'click_by_selector';
+args: {
+  selector: "button[title='Create New Encyclopedia']";
+}
 
 // Instead of: document.querySelector('[title="Create New Encyclopedia"]').click()
-command: "click_by_text"
-args: { text: "Create New Encyclopedia" }
+command: 'click_by_text';
+args: {
+  text: 'Create New Encyclopedia';
+}
 
 // Instead of: location.hash = '#create'
-command: "navigate_to_hash"
-args: { text: "create" }
+command: 'navigate_to_hash';
+args: {
+  text: 'create';
+}
 
 // Instead of: new KeyboardEvent('keydown', {...})
-command: "send_keyboard_shortcut"
-args: { text: "Ctrl+N" }
+command: 'send_keyboard_shortcut';
+args: {
+  text: 'Ctrl+N';
+}
 ```
 
 ### ❌ What Gets Blocked (and why):
 
 ```javascript
 // ❌ Raw function calls in eval
-document.querySelector('[title="Create New Encyclopedia"]').click()
+document.querySelector('[title="Create New Encyclopedia"]').click();
 // Reason: Function calls are restricted for security
 
 // ❌ Assignment operations
-location.hash = '#create'
+location.hash = '#create';
 // Reason: Assignment operations can be dangerous
 
 // ❌ Constructor calls
-new KeyboardEvent('keydown', {key: 'n', metaKey: true})
+new KeyboardEvent('keydown', { key: 'n', metaKey: true });
 // Reason: Constructor calls can be used for code injection
 ```
 
 ## Configuration in Code
 
+The security level is automatically set to BALANCED and cannot be changed:
+
 ```typescript
-import { SecurityManager, SecurityLevel } from './security/manager.js';
+import { SecurityManager } from './security/manager.js';
 
-// Create with specific security level
-const securityManager = new SecurityManager({}, SecurityLevel.PERMISSIVE);
+// SecurityManager automatically uses BALANCED security level
+const securityManager = new SecurityManager();
 
-// Or change at runtime
-securityManager.setSecurityLevel(SecurityLevel.BALANCED);
+// Security level is fixed and cannot be changed at runtime
+// This ensures consistent security across all deployments
 ```

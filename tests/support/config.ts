@@ -1,4 +1,4 @@
-import path from "path";
+import path from 'path';
 
 /**
  * Centralized test configuration
@@ -7,10 +7,10 @@ import path from "path";
 export const TEST_CONFIG = {
   // Test resource directories
   PATHS: {
-    TEMP_DIR: path.join(process.cwd(), "temp"),
-    TEST_TEMP_DIR: path.join(process.cwd(), "test-temp"),
-    LOGS_DIR: path.join(process.cwd(), "logs"),
-    ELECTRON_APPS_DIR: path.join(process.cwd(), "temp", "electron-apps"),
+    TEMP_DIR: path.join(process.cwd(), 'temp'),
+    TEST_TEMP_DIR: path.join(process.cwd(), 'test-temp'),
+    LOGS_DIR: path.join(process.cwd(), 'logs'),
+    ELECTRON_APPS_DIR: path.join(process.cwd(), 'temp', 'electron-apps'),
   },
 
   // Test timeouts and limits
@@ -24,26 +24,26 @@ export const TEST_CONFIG = {
   SECURITY: {
     RISKY_COMMANDS: [
       'eval:require("fs").writeFileSync("/tmp/test", "malicious")',
-      "eval:process.exit(1)",
+      'eval:process.exit(1)',
       'eval:require("child_process").exec("rm -rf /")',
       'eval:Function("return process")().exit(1)',
       'eval:window.location = "javascript:alert(1)"',
       'eval:document.write("<script>alert(1)</script>")',
     ],
     MALICIOUS_PATHS: [
-      "../../../etc/passwd",
-      "/etc/shadow", 
-      "~/.ssh/id_rsa",
-      "C:\\Windows\\System32\\config\\SAM",
-      "/var/log/auth.log",
-      "~/.bashrc",
+      '../../../etc/passwd',
+      '/etc/shadow',
+      '~/.ssh/id_rsa',
+      'C:\\Windows\\System32\\config\\SAM',
+      '/var/log/auth.log',
+      '~/.bashrc',
     ],
   },
 
   // Electron test app configuration
   ELECTRON: {
     DEFAULT_PORT_RANGE: [9300, 9400],
-    WINDOW_TITLE: "Test Electron App",
+    WINDOW_TITLE: 'Test Electron App',
     HTML_CONTENT: `
       <!DOCTYPE html>
       <html>
@@ -69,7 +69,7 @@ export const TEST_CONFIG = {
  */
 export function createTestTempPath(testName?: string): string {
   const timestamp = Date.now();
-  const suffix = testName ? `-${testName.replace(/[^a-zA-Z0-9]/g, "-")}` : "";
+  const suffix = testName ? `-${testName.replace(/[^a-zA-Z0-9]/g, '-')}` : '';
   return path.join(TEST_CONFIG.PATHS.TEST_TEMP_DIR, `test-${timestamp}${suffix}`);
 }
 

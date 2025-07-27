@@ -103,27 +103,10 @@ export function getSecurityConfig(
 }
 
 /**
- * Environment-based security level detection
- * ALWAYS defaults to STRICT for maximum security
+ * Get the default security level
+ * Always returns BALANCED for optimal security and functionality balance
  */
-export function detectSecurityLevel(): SecurityLevel {
-  // Always start with the most secure level
-  const explicitLevel = process.env.MCP_SECURITY_LEVEL?.toLowerCase();
-  
-  // Only allow explicit downgrade via environment variable
-  switch (explicitLevel) {
-    case 'balanced':
-      logger.warn('Security level set to BALANCED via MCP_SECURITY_LEVEL environment variable');
-      return SecurityLevel.BALANCED;
-    case 'permissive':
-      logger.warn('Security level set to PERMISSIVE via MCP_SECURITY_LEVEL environment variable');
-      return SecurityLevel.PERMISSIVE;
-    case 'development':
-      logger.warn('Security level set to DEVELOPMENT via MCP_SECURITY_LEVEL environment variable - USE ONLY FOR DEVELOPMENT!');
-      return SecurityLevel.DEVELOPMENT;
-    case 'strict':
-    default:
-      // Default to strict security - never auto-detect based on environment
-      return SecurityLevel.STRICT;
-  }
+export function getDefaultSecurityLevel(): SecurityLevel {
+  logger.info('Using BALANCED security level (default)');
+  return SecurityLevel.BALANCED;
 }

@@ -8,7 +8,7 @@ This project follows a clean and organized test structure that separates concern
 tests/
 ├── unit/                    # Unit tests for individual components
 │   └── security-manager.test.ts
-├── integration/             # Integration tests for full workflows  
+├── integration/             # Integration tests for full workflows
 │   └── electron-security-integration.test.ts
 ├── fixtures/                # Test data and mock files
 ├── support/                 # Test utilities and helpers
@@ -21,12 +21,14 @@ tests/
 ## Test Types
 
 ### Unit Tests (`tests/unit/`)
+
 - Test individual functions, classes, and modules in isolation
 - Fast execution, no external dependencies
 - Use mocks and stubs for dependencies
 - Example: Testing SecurityManager methods
 
-### Integration Tests (`tests/integration/`) 
+### Integration Tests (`tests/integration/`)
+
 - Test complete workflows and component interactions
 - May use real Electron processes and file system
 - Test end-to-end functionality
@@ -35,23 +37,27 @@ tests/
 ### Support Files (`tests/support/`)
 
 #### `config.ts`
+
 - Centralized test configuration
 - Constants for paths, timeouts, test data
 - Security test vectors (risky commands, malicious paths)
 - Electron app configuration
 
 #### `helpers.ts`
+
 - Reusable test utility functions
 - Test Electron app creation and management
 - File system cleanup utilities
 - MCP request formatting helpers
 
 #### `setup.ts`
+
 - Global test setup and teardown
 - Environment initialization
 - Resource cleanup
 
 ### `conftest.ts`
+
 - Global test configuration (inspired by Python's conftest.py)
 - Imports and exports commonly used test utilities
 - Sets up global test hooks
@@ -60,14 +66,15 @@ tests/
 ## Usage Examples
 
 ### Writing Unit Tests
-```typescript
-import { describe, it, expect } from "vitest";
-import { TEST_CONFIG } from "../conftest.js";
-import { MyComponent } from "../../src/my-component.js";
 
-describe("MyComponent", () => {
-  it("should handle risky inputs", () => {
-    TEST_CONFIG.SECURITY.RISKY_COMMANDS.forEach(cmd => {
+```typescript
+import { describe, it, expect } from 'vitest';
+import { TEST_CONFIG } from '../conftest.js';
+import { MyComponent } from '../../src/my-component.js';
+
+describe('MyComponent', () => {
+  it('should handle risky inputs', () => {
+    TEST_CONFIG.SECURITY.RISKY_COMMANDS.forEach((cmd) => {
       expect(MyComponent.isRisky(cmd)).toBe(true);
     });
   });
@@ -75,11 +82,12 @@ describe("MyComponent", () => {
 ```
 
 ### Writing Integration Tests
-```typescript
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { TestHelpers, type TestElectronApp } from "../conftest.js";
 
-describe("Integration Test", () => {
+```typescript
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { TestHelpers, type TestElectronApp } from '../conftest.js';
+
+describe('Integration Test', () => {
   let testApp: TestElectronApp;
 
   beforeAll(async () => {
@@ -89,7 +97,7 @@ describe("Integration Test", () => {
   afterAll(async () => {
     await testApp.cleanup();
   });
-  
+
   // ... test cases
 });
 ```
@@ -103,7 +111,7 @@ npm test
 # Run only unit tests
 npm test tests/unit
 
-# Run only integration tests  
+# Run only integration tests
 npm test tests/integration
 
 # Run with coverage

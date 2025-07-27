@@ -1,9 +1,9 @@
-import { rmSync, existsSync, readdirSync, statSync, writeFileSync, mkdirSync } from "fs";
-import { join, basename } from "path";
-import { logger } from "../../src/utils/logger.js";
-import { TEST_CONFIG, createElectronAppPath } from "./config.js";
-import { spawn, ChildProcess } from "child_process";
-import { createServer } from "net";
+import { rmSync, existsSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'fs';
+import { join, basename } from 'path';
+import { logger } from '../../src/utils/logger.js';
+import { TEST_CONFIG, createElectronAppPath } from './config.js';
+import { spawn, ChildProcess } from 'child_process';
+import { createServer } from 'net';
 
 export interface TestElectronApp {
   port: number;
@@ -28,21 +28,21 @@ export class TestHelpers {
   static async createTestElectronApp(): Promise<TestElectronApp> {
     const port = await this.findAvailablePort();
     const appPath = createElectronAppPath(port);
-    
+
     // Create app directory and files
     mkdirSync(appPath, { recursive: true });
-    
+
     // Create package.json
     const packageJson = {
-      name: "test-electron-app",
-      version: "1.0.0",
-      main: "main.js",
+      name: 'test-electron-app',
+      version: '1.0.0',
+      main: 'main.js',
       scripts: {
-        start: "electron ."
-      }
+        start: 'electron .',
+      },
     };
-    writeFileSync(join(appPath, "package.json"), JSON.stringify(packageJson, null, 2));
-    
+    writeFileSync(join(appPath, 'package.json'), JSON.stringify(packageJson, null, 2));
+
     // Create main.js
     const mainJs = `
       const { app, BrowserWindow } = require('electron');
@@ -84,17 +84,17 @@ export class TestHelpers {
         }
       });
     `;
-    writeFileSync(join(appPath, "main.js"), mainJs);
-    
+    writeFileSync(join(appPath, 'main.js'), mainJs);
+
     // Create index.html
-    writeFileSync(join(appPath, "index.html"), TEST_CONFIG.ELECTRON.HTML_CONTENT);
-    
+    writeFileSync(join(appPath, 'index.html'), TEST_CONFIG.ELECTRON.HTML_CONTENT);
+
     // Start the Electron process
     const electronProcess = spawn('npx', ['electron', '.'], {
       cwd: appPath,
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
-    
+
     const app: TestElectronApp = {
       port,
       process: electronProcess,
@@ -104,22 +104,25 @@ export class TestHelpers {
         if (existsSync(appPath)) {
           rmSync(appPath, { recursive: true, force: true });
         }
-      }
+      },
     };
-    
+
     // Wait for app to be ready
     await this.waitForElectronApp(app);
-    
+
     return app;
   }
 
   /**
    * Wait for Electron app to be ready for testing
    */
-  static async waitForElectronApp(app: TestElectronApp, timeout = TEST_CONFIG.TIMEOUTS.ELECTRON_START): Promise<void> {
+  static async waitForElectronApp(
+    app: TestElectronApp,
+    timeout = TEST_CONFIG.TIMEOUTS.ELECTRON_START,
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
-      
+
       const checkReady = async () => {
         try {
           const response = await fetch(`http://localhost:${app.port}/json`);
@@ -131,15 +134,15 @@ export class TestHelpers {
         } catch {
           // App not ready yet
         }
-        
+
         if (Date.now() - startTime > timeout) {
           reject(new Error(`Electron app failed to start within ${timeout}ms`));
           return;
         }
-        
+
         setTimeout(checkReady, 100);
       };
-      
+
       checkReady();
     });
   }
@@ -149,13 +152,13 @@ export class TestHelpers {
    */
   private static async findAvailablePort(): Promise<number> {
     const [start, end] = TEST_CONFIG.ELECTRON.DEFAULT_PORT_RANGE;
-    
+
     for (let port = start; port <= end; port++) {
       if (await this.isPortAvailable(port)) {
         return port;
       }
     }
-    
+
     throw new Error(`No available ports in range ${start}-${end}`);
   }
 
@@ -165,11 +168,11 @@ export class TestHelpers {
   private static async isPortAvailable(port: number): Promise<boolean> {
     return new Promise((resolve) => {
       const server = createServer();
-      
+
       server.listen(port, () => {
         server.close(() => resolve(true));
       });
-      
+
       server.on('error', () => resolve(false));
     });
   }
@@ -178,11 +181,7 @@ export class TestHelpers {
    * Clean up test artifacts and temporary files
    */
   static async cleanup(options: CleanupOptions = {}): Promise<void> {
-    const {
-      removeLogsDir = true,
-      removeTempDir = true,
-      preserveKeys = false,
-    } = options;
+    const { removeLogsDir = true, removeTempDir = true, preserveKeys = false } = options;
 
     try {
       // Clean up logs directory
@@ -197,15 +196,17 @@ export class TestHelpers {
 
       // Clean up temp directories
       if (removeTempDir) {
-        [basename(TEST_CONFIG.PATHS.TEMP_DIR), basename(TEST_CONFIG.PATHS.TEST_TEMP_DIR)].forEach((dir) => {
-          if (existsSync(dir)) {
-            rmSync(dir, { recursive: true, force: true });
-            logger.info(`🧹 Cleaned up ${dir} directory`);
-          }
-        });
+        [basename(TEST_CONFIG.PATHS.TEMP_DIR), basename(TEST_CONFIG.PATHS.TEST_TEMP_DIR)].forEach(
+          (dir) => {
+            if (existsSync(dir)) {
+              rmSync(dir, { recursive: true, force: true });
+              logger.info(`🧹 Cleaned up ${dir} directory`);
+            }
+          },
+        );
       }
     } catch (error) {
-      logger.error("Failed to cleanup test artifacts:", error);
+      logger.error('Failed to cleanup test artifacts:', error);
     }
   }
 
@@ -214,12 +215,12 @@ export class TestHelpers {
    */
   private static cleanupLogsPreservingKeys(): void {
     try {
-      const securityDir = join(basename(TEST_CONFIG.PATHS.LOGS_DIR), "security");
+      const securityDir = join(basename(TEST_CONFIG.PATHS.LOGS_DIR), 'security');
       if (existsSync(securityDir)) {
         const files = readdirSync(securityDir);
 
         files.forEach((file: string) => {
-          if (file.endsWith(".log")) {
+          if (file.endsWith('.log')) {
             const filePath = join(securityDir, file);
             rmSync(filePath, { force: true });
             logger.info(`🧹 Cleaned up log file: ${filePath}`);
@@ -227,7 +228,7 @@ export class TestHelpers {
         });
       }
     } catch (error) {
-      logger.error("Failed to cleanup log files:", error);
+      logger.error('Failed to cleanup log files:', error);
     }
   }
 
@@ -244,13 +245,15 @@ export class TestHelpers {
         logsSize = this.getDirectorySize(logsDir);
       }
 
-      [basename(TEST_CONFIG.PATHS.TEMP_DIR), basename(TEST_CONFIG.PATHS.TEST_TEMP_DIR)].forEach((dir) => {
-        if (existsSync(dir)) {
-          tempSize += this.getDirectorySize(dir);
-        }
-      });
+      [basename(TEST_CONFIG.PATHS.TEMP_DIR), basename(TEST_CONFIG.PATHS.TEST_TEMP_DIR)].forEach(
+        (dir) => {
+          if (existsSync(dir)) {
+            tempSize += this.getDirectorySize(dir);
+          }
+        },
+      );
     } catch (error) {
-      logger.error("Failed to calculate cleanup size:", error);
+      logger.error('Failed to calculate cleanup size:', error);
     }
 
     return {
@@ -291,7 +294,7 @@ export class TestHelpers {
    */
   static createMCPRequest(toolName: string, args: any = {}) {
     return {
-      method: "tools/call" as const,
+      method: 'tools/call' as const,
       params: {
         name: toolName,
         arguments: args,

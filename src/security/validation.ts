@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { logger } from '../utils/logger.js';
-import { SecurityLevel, SECURITY_PROFILES, detectSecurityLevel } from './config.js';
+import { SecurityLevel, SECURITY_PROFILES, getDefaultSecurityLevel } from './config.js';
 
 // Input validation schemas
 export const SecureCommandSchema = z.object({
@@ -40,7 +40,7 @@ export interface ValidationResult {
 }
 
 export class InputValidator {
-  private static securityLevel: SecurityLevel = detectSecurityLevel();
+  private static securityLevel: SecurityLevel = getDefaultSecurityLevel();
 
   static setSecurityLevel(level: SecurityLevel) {
     this.securityLevel = level;
