@@ -8,11 +8,11 @@ A powerful Model Context Protocol (MCP) server that provides comprehensive Elect
 
 ## Demo
 
-See Infinitome in action:
+See the Electron MCP Server in action:
 
-https://github.com/halilural/electron-mcp-server/blob/master/assets/demo.mp4
+https://github.com/user-attachments/assets/demo.mp4
 
-_Watch how easy it is to create encyclopedias, organize content, and leverage AI-powered insights._
+*Watch how easy it is to automate Electron applications with AI-powered MCP commands.*
 
 ## 🎯 What Makes This Special
 
