@@ -1,9 +1,9 @@
-import { CodeSandbox, SandboxResult } from './sandbox.js';
-import { InputValidator } from './validation.js';
-import { securityLogger, AuditLogEntry } from './audit.js';
+import { CodeSandbox, SandboxResult } from './sandbox';
+import { InputValidator } from './validation';
+import { securityLogger, AuditLogEntry } from './audit';
 import { randomUUID } from 'crypto';
-import { logger } from '../utils/logger.js';
-import { SecurityLevel, getSecurityConfig, getDefaultSecurityLevel } from './config.js';
+import { logger } from '../utils/logger';
+import { SecurityLevel, getSecurityConfig, getDefaultSecurityLevel } from './config';
 
 export interface SecurityConfig {
   enableSandbox: boolean;

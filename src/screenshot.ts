@@ -1,37 +1,41 @@
 import { chromium } from 'playwright';
 import * as fs from 'fs/promises';
 import { createCipheriv, randomBytes, pbkdf2Sync } from 'crypto';
-import { logger } from './utils/logger.js';
-import { scanForElectronApps } from './utils/electron-discovery.js';
+import { logger } from './utils/logger';
+import { scanForElectronApps } from './utils/electron-discovery';
 import * as path from 'path';
 
-// Validate environment variables at module startup
-try {
-  if (!process.env.SCREENSHOT_ENCRYPTION_KEY) {
-    throw new Error(
-      'SCREENSHOT_ENCRYPTION_KEY environment variable is required but not set. ' +
-        'Please set this variable to a secure 32-byte hex string. ' +
-        'Generate one with: openssl rand -hex 32',
-    );
+// Generate a fallback encryption key if none is provided
+function generateFallbackKey(): string {
+  const fallbackKey = randomBytes(32).toString('hex');
+  logger.warn('⚠️  SCREENSHOT_ENCRYPTION_KEY not set - using temporary key for this session');
+  logger.warn('⚠️  Screenshots will not be decryptable after restart!');
+  logger.warn('⚠️  For production use, set SCREENSHOT_ENCRYPTION_KEY environment variable');
+  logger.warn('⚠️  Generate a permanent key with: openssl rand -hex 32');
+  return fallbackKey;
+}
+
+// Validate and get encryption key with fallback
+function getEncryptionKey(): string {
+  const key = process.env.SCREENSHOT_ENCRYPTION_KEY;
+  
+  if (!key) {
+    return generateFallbackKey();
   }
 
-  if (process.env.SCREENSHOT_ENCRYPTION_KEY === 'default-screenshot-key-change-me') {
-    throw new Error(
-      'SCREENSHOT_ENCRYPTION_KEY is set to the default value. ' +
-        'Please set this variable to a secure 32-byte hex string. ' +
-        'Generate one with: openssl rand -hex 32',
-    );
+  if (key === 'default-screenshot-key-change-me') {
+    logger.warn('⚠️  SCREENSHOT_ENCRYPTION_KEY is set to default value - using temporary key');
+    logger.warn('⚠️  Please set a secure key with: openssl rand -hex 32');
+    return generateFallbackKey();
   }
 
-  if (process.env.SCREENSHOT_ENCRYPTION_KEY.length < 32) {
-    throw new Error(
-      'SCREENSHOT_ENCRYPTION_KEY must be at least 32 characters long for security. ' +
-        'Generate a secure key with: openssl rand -hex 32',
-    );
+  if (key.length < 32) {
+    logger.warn('⚠️  SCREENSHOT_ENCRYPTION_KEY too short - using temporary key');
+    logger.warn('⚠️  Key must be at least 32 characters. Generate with: openssl rand -hex 32');
+    return generateFallbackKey();
   }
-} catch (error) {
-  logger.error('Environment validation failed:', error);
-  throw error;
+
+  return key;
 }
 
 interface EncryptedScreenshot {
@@ -103,39 +107,17 @@ function validateScreenshotPath(outputPath: string): boolean {
 }
 
 // Validate that required environment variables are set
-function validateEnvironmentVariables(): void {
-  if (!process.env.SCREENSHOT_ENCRYPTION_KEY) {
-    throw new Error(
-      'SCREENSHOT_ENCRYPTION_KEY environment variable is required but not set. ' +
-        'Please set this variable to a secure 32-byte hex string. ' +
-        'Generate one with: openssl rand -hex 32',
-    );
-  }
-
-  if (process.env.SCREENSHOT_ENCRYPTION_KEY === 'default-screenshot-key-change-me') {
-    throw new Error(
-      'SCREENSHOT_ENCRYPTION_KEY is set to the default value. ' +
-        'Please set this variable to a secure 32-byte hex string. ' +
-        'Generate one with: openssl rand -hex 32',
-    );
-  }
-
-  if (process.env.SCREENSHOT_ENCRYPTION_KEY.length < 32) {
-    throw new Error(
-      'SCREENSHOT_ENCRYPTION_KEY must be at least 32 characters long for security. ' +
-        'Generate a secure key with: openssl rand -hex 32',
-    );
-  }
+function validateEnvironmentVariables(): string {
+  return getEncryptionKey();
 }
 
 // Encrypt screenshot data for secure storage and transmission
 function encryptScreenshotData(buffer: Buffer): EncryptedScreenshot {
   try {
-    // Validate environment variables before proceeding
-    validateEnvironmentVariables();
+    // Get validated encryption key (with fallback)
+    const password = validateEnvironmentVariables();
 
     const algorithm = 'aes-256-cbc';
-    const password = process.env.SCREENSHOT_ENCRYPTION_KEY!; // Safe to use ! after validation
     const iv = randomBytes(16);
 
     // Derive a proper key from the password using PBKDF2

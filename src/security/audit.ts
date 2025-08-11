@@ -1,7 +1,7 @@
 import { promises as fs, mkdirSync, writeFileSync, chmodSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
-import { logger } from '../utils/logger.js';
+import { logger } from '../utils/logger';
 
 export interface AuditLogEntry {
   timestamp: string;

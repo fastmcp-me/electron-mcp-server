@@ -73,7 +73,7 @@ new KeyboardEvent('keydown', { key: 'n', metaKey: true });
 The security level is automatically set to BALANCED and cannot be changed:
 
 ```typescript
-import { SecurityManager } from './security/manager.js';
+import { SecurityManager } from './security/manager';
 
 // SecurityManager automatically uses BALANCED security level
 const securityManager = new SecurityManager();

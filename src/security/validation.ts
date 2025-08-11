@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { logger } from '../utils/logger.js';
-import { SecurityLevel, SECURITY_PROFILES, getDefaultSecurityLevel } from './config.js';
+import { logger } from '../utils/logger';
+import { SecurityLevel, SECURITY_PROFILES, getDefaultSecurityLevel } from './config';
 
 // Input validation schemas
 export const SecureCommandSchema = z.object({

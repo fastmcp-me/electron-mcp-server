@@ -1,5 +1,5 @@
-import { SecurityConfig } from './manager.js';
-import { logger } from '../utils/logger.js';
+import { SecurityConfig } from './manager';
+import { logger } from '../utils/logger';
 
 export enum SecurityLevel {
   STRICT = 'strict', // Maximum security - blocks most function calls

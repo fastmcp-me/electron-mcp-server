@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { logger } from './logger.js';
+import { logger } from './logger';
 
 // Helper function to check if Electron is installed (global or local)
 export async function isElectronInstalled(appPath?: string): Promise<boolean> {

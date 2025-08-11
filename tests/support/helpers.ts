@@ -1,7 +1,7 @@
 import { rmSync, existsSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'fs';
 import { join, basename } from 'path';
-import { logger } from '../../src/utils/logger.js';
-import { TEST_CONFIG, createElectronAppPath } from './config.js';
+import { logger } from '../../src/utils/logger';
+import { TEST_CONFIG, createElectronAppPath } from './config';
 import { spawn, ChildProcess } from 'child_process';
 import { createServer } from 'net';
 

@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { TestHelpers, type TestElectronApp, TEST_CONFIG } from '../conftest.js';
-import { handleToolCall } from '../../src/handlers.js';
-import { ToolName } from '../../src/tools.js';
+import { TestHelpers, type TestElectronApp, TEST_CONFIG } from '../conftest';
+import { handleToolCall } from '../../src/handlers';
+import { ToolName } from '../../src/tools';
 import { join } from 'path';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
-import { logger } from '../../src/utils/logger.js';
+import { logger } from '../../src/utils/logger';
 
 // Helper function to create proper MCP request format
 function createMCPRequest(toolName: string, args: any = {}) {

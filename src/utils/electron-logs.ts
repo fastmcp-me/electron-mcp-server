@@ -1,7 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { findElectronTarget, connectForLogs } from './electron-connection.js';
-import { logger } from './logger.js';
+import { findElectronTarget, connectForLogs } from './electron-connection';
+import { logger } from './logger';
 
 export type LogType = 'console' | 'main' | 'renderer' | 'all';
 
