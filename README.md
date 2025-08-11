@@ -628,6 +628,18 @@ npm test
 npm run dev
 ```
 
+### Testing
+
+The project includes comprehensive test files for React compatibility:
+
+```bash
+# Run React compatibility tests
+cd tests/integration/react-compatibility
+electron test-react-electron.js
+```
+
+See [`tests/integration/react-compatibility/README.md`](tests/integration/react-compatibility/README.md) for detailed testing instructions and scenarios.
+
 ### Project Structure
 
 ```

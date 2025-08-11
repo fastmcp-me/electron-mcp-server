@@ -494,10 +494,9 @@ export function generateClickByTextCommand(text: string): string {
           new MouseEvent('click', { bubbles: true, cancelable: true, view: window })
         ];
         
-        let clickSuccessful = true;
+        // Dispatch all events - don't treat preventDefault as failure
         events.forEach(event => {
-          const result = element.dispatchEvent(event);
-          if (!result) clickSuccessful = false;
+          element.dispatchEvent(event);
         });
         
         // Trigger additional React events if it's a form element
@@ -510,10 +509,6 @@ export function generateClickByTextCommand(text: string): string {
         setTimeout(() => {
           element.style.pointerEvents = originalPointerEvents;
         }, 1000);
-        
-        if (!clickSuccessful) {
-          throw new Error('Click events were cancelled by the page');
-        }
         
         return true;
       }
