@@ -1,18 +1,18 @@
-import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types';
 import { z } from 'zod';
-import { ToolName } from './tools.js';
+import { ToolName } from './tools';
 import {
   SendCommandToElectronSchema,
   TakeScreenshotSchema,
   ReadElectronLogsSchema,
   GetElectronWindowInfoSchema,
-} from './schemas.js';
-import { sendCommandToElectron } from './utils/electron-enhanced-commands.js';
-import { getElectronWindowInfo } from './utils/electron-discovery.js';
-import { readElectronLogs } from './utils/electron-logs.js';
-import { takeScreenshot } from './screenshot.js';
-import { logger } from './utils/logger.js';
-import { securityManager } from './security/manager.js';
+} from './schemas';
+import { sendCommandToElectron } from './utils/electron-enhanced-commands';
+import { getElectronWindowInfo } from './utils/electron-discovery';
+import { readElectronLogs } from './utils/electron-logs';
+import { takeScreenshot } from './screenshot';
+import { logger } from './utils/logger';
+import { securityManager } from './security/manager';
 
 export async function handleToolCall(request: z.infer<typeof CallToolRequestSchema>) {
   const { name, arguments: args } = request.params;
