@@ -640,6 +640,14 @@ electron test-react-electron.js
 
 See [`tests/integration/react-compatibility/README.md`](tests/integration/react-compatibility/README.md) for detailed testing instructions and scenarios.
 
+### React Compatibility
+
+This MCP server has been thoroughly tested with React applications and handles common React patterns correctly:
+
+- **✅ React Event Handling**: Properly handles `preventDefault()` in click handlers
+- **✅ Form Input Detection**: Advanced scoring algorithm works with React-rendered inputs
+- **✅ Component Interaction**: Compatible with React components, hooks, and state management
+
 ### Project Structure
 
 ```
@@ -665,6 +673,8 @@ src/
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+**Before reporting issues**: Please use the standardized [`ISSUE_TEMPLATE.md`](ISSUE_TEMPLATE.md) for proper bug reporting format. For React compatibility problems or similar technical issues, also review [`REACT_COMPATIBILITY_ISSUES.md`](REACT_COMPATIBILITY_ISSUES.md) for detailed debugging examples, including proper command examples, error outputs, and reproduction steps.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/awesome-feature`)
@@ -697,6 +707,8 @@ Your support helps me maintain and improve this project. Thank you! 🙏
 - **[NPM Package](https://www.npmjs.com/package/electron-mcp-server)**
 - **[Model Context Protocol](https://modelcontextprotocol.io)**
 - **[Chrome DevTools Protocol Docs](https://chromedevtools.github.io/devtools-protocol/)**
+- **[Issue Template](./ISSUE_TEMPLATE.md)** - Standardized bug reporting format
+- **[React Compatibility Issues Documentation](./REACT_COMPATIBILITY_ISSUES.md)** - Technical debugging guide for React applications
 
 ---
 
