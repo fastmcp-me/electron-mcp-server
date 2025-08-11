@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
-import { scanForElectronApps, findMainTarget } from './electron-discovery.js';
-import { logger } from './logger.js';
+import { scanForElectronApps, findMainTarget } from './electron-discovery';
+import { logger } from './logger';
 
 export interface DevToolsTarget {
   id: string;

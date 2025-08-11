@@ -1,10 +1,10 @@
-import { executeInElectron, findElectronTarget } from './electron-connection.js';
-import { generateFindElementsCommand, generateClickByTextCommand } from './electron-commands.js';
+import { executeInElectron, findElectronTarget } from './electron-connection';
+import { generateFindElementsCommand, generateClickByTextCommand } from './electron-commands';
 import {
   generateFillInputCommand,
   generateSelectOptionCommand,
   generatePageStructureCommand,
-} from './electron-input-commands.js';
+} from './electron-input-commands';
 
 export interface CommandArgs {
   selector?: string;

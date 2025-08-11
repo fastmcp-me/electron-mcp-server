@@ -2,14 +2,14 @@
 
 // Load environment variables from .env file
 import { config } from 'dotenv';
-config();
+import { Server } from '@modelcontextprotocol/sdk/server/index';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types';
+import { tools } from './tools';
+import { handleToolCall } from './handlers';
+import { logger } from './utils/logger';
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { tools } from './tools.js';
-import { handleToolCall } from './handlers.js';
-import { logger } from './utils/logger.js';
+config();
 
 // Create MCP server instance
 const server = new Server(

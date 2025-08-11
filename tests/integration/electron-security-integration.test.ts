@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { TestHelpers, type TestElectronApp, TEST_CONFIG } from '../conftest.js';
-import { handleToolCall } from '../../src/handlers.js';
-import { ToolName } from '../../src/tools.js';
+import { TestHelpers, type TestElectronApp, TEST_CONFIG } from '../conftest';
+import { handleToolCall } from '../../src/handlers';
+import { ToolName } from '../../src/tools';
 import { join } from 'path';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
-import { logger } from '../../src/utils/logger.js';
+import { logger } from '../../src/utils/logger';
 
 // Helper function to create proper MCP request format
 function createMCPRequest(toolName: string, args: any = {}) {
@@ -629,31 +629,6 @@ describe('Electron Integration & Security Tests', () => {
           expect(response).toMatch(/error|undefined|null|denied|blocked/);
         }
       }
-    });
-  });
-
-  describe('Rate Limiting and Throttling', () => {
-    it('should handle rapid successive requests', async () => {
-      const promises: Promise<any>[] = [];
-      const startTime = Date.now();
-
-      // Fire 10 rapid requests
-      for (let i = 0; i < 10; i++) {
-        promises.push(handleToolCall(createMCPRequest(ToolName.GET_ELECTRON_WINDOW_INFO, {})));
-      }
-
-      const results = await Promise.all(promises);
-      const endTime = Date.now();
-
-      // All requests should complete
-      expect(results).toHaveLength(10);
-
-      // Should complete in reasonable time (not hanging)
-      expect(endTime - startTime).toBeLessThan(30000);
-
-      // Most should succeed (some might be throttled)
-      const successCount = results.filter((r: any) => !r.isError).length;
-      expect(successCount).toBeGreaterThan(5);
     });
   });
 

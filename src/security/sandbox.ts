@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import { logger } from '../utils/logger.js';
+import { logger } from '../utils/logger';
 
 export interface SandboxOptions {
   timeout?: number;

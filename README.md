@@ -37,6 +37,71 @@ Transform your Electron development experience with **AI-powered automation**:
 - **🔓 PERMISSIVE**: More functionality for trusted environments
 - **🛠️ DEVELOPMENT**: Minimal restrictions for development/testing
 
+### Environment Configuration
+
+Configure the security level and other settings through your MCP client configuration:
+
+**VS Code MCP Settings:**
+```json
+{
+  "mcp": {
+    "servers": {
+      "electron": {
+        "command": "npx",
+        "args": ["-y", "electron-mcp-server"],
+        "env": {
+          "SECURITY_LEVEL": "balanced",
+          "SCREENSHOT_ENCRYPTION_KEY":"your-32-byte-hex-string"
+        }
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop Configuration:**
+```json
+{
+  "mcpServers": {
+    "electron": {
+      "command": "npx",
+      "args": ["-y", "electron-mcp-server"],
+      "env": {
+        "SECURITY_LEVEL": "balanced",
+        "SCREENSHOT_ENCRYPTION_KEY":"your-32-byte-hex-string"
+      }
+    }
+  }
+}
+```
+
+**Alternative: Local .env file (for development):**
+```bash
+# Create .env file in your project directory
+SECURITY_LEVEL=balanced
+SCREENSHOT_ENCRYPTION_KEY=your-32-byte-hex-string
+```
+
+**Security Level Behaviors:**
+
+| Level | UI Interactions | DOM Queries | Property Access | Assignments | Function Calls | Risk Threshold |
+|-------|-----------------|-------------|-----------------|-------------|----------------|----------------|
+| `strict` | ❌ Blocked | ❌ Blocked | ✅ Allowed | ❌ Blocked | ❌ None allowed | Low |
+| `balanced` | ✅ Allowed | ✅ Allowed | ✅ Allowed | ❌ Blocked | ✅ Safe UI functions | Medium |
+| `permissive` | ✅ Allowed | ✅ Allowed | ✅ Allowed | ✅ Allowed | ✅ Extended UI functions | High |
+| `development` | ✅ Allowed | ✅ Allowed | ✅ Allowed | ✅ Allowed | ✅ All functions | Critical |
+
+**Environment Setup:**
+
+1. Copy `.env.example` to `.env`
+2. Set `SECURITY_LEVEL` to your desired level
+3. Configure other security settings as needed
+
+```bash
+cp .env.example .env
+# Edit .env and set SECURITY_LEVEL=balanced
+```
+
 ### Secure UI Interaction Commands
 
 Instead of raw JavaScript eval, use these secure commands:
@@ -204,7 +269,11 @@ Add to your VS Code MCP settings:
     "servers": {
       "electron": {
         "command": "npx",
-        "args": ["-y", "electron-mcp-server"]
+        "args": ["-y", "electron-mcp-server"],
+        "env": {
+          "SECURITY_LEVEL": "balanced",
+          "SCREENSHOT_ENCRYPTION_KEY": "your-32-byte-hex-string-here"
+        }
       }
     }
   }
@@ -220,7 +289,11 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "electron": {
       "command": "npx",
-      "args": ["-y", "electron-mcp-server"]
+      "args": ["-y", "electron-mcp-server"],
+      "env": {
+        "SECURITY_LEVEL": "balanced",
+        "SCREENSHOT_ENCRYPTION_KEY": "your-32-byte-hex-string-here"
+      }
     }
   }
 }
@@ -555,6 +628,26 @@ npm test
 npm run dev
 ```
 
+### Testing
+
+The project includes comprehensive test files for React compatibility:
+
+```bash
+# Run React compatibility tests
+cd tests/integration/react-compatibility
+electron test-react-electron.js
+```
+
+See [`tests/integration/react-compatibility/README.md`](tests/integration/react-compatibility/README.md) for detailed testing instructions and scenarios.
+
+### React Compatibility
+
+This MCP server has been thoroughly tested with React applications and handles common React patterns correctly:
+
+- **✅ React Event Handling**: Properly handles `preventDefault()` in click handlers
+- **✅ Form Input Detection**: Advanced scoring algorithm works with React-rendered inputs
+- **✅ Component Interaction**: Compatible with React components, hooks, and state management
+
 ### Project Structure
 
 ```
@@ -580,6 +673,8 @@ src/
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+**Before reporting issues**: Please use the standardized [`ISSUE_TEMPLATE.md`](ISSUE_TEMPLATE.md) for proper bug reporting format. For React compatibility problems or similar technical issues, also review [`REACT_COMPATIBILITY_ISSUES.md`](REACT_COMPATIBILITY_ISSUES.md) for detailed debugging examples, including proper command examples, error outputs, and reproduction steps.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/awesome-feature`)
@@ -612,6 +707,8 @@ Your support helps me maintain and improve this project. Thank you! 🙏
 - **[NPM Package](https://www.npmjs.com/package/electron-mcp-server)**
 - **[Model Context Protocol](https://modelcontextprotocol.io)**
 - **[Chrome DevTools Protocol Docs](https://chromedevtools.github.io/devtools-protocol/)**
+- **[Issue Template](./ISSUE_TEMPLATE.md)** - Standardized bug reporting format
+- **[React Compatibility Issues Documentation](./REACT_COMPATIBILITY_ISSUES.md)** - Technical debugging guide for React applications
 
 ---
 

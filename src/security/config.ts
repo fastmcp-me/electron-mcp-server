@@ -1,5 +1,5 @@
-import { SecurityConfig } from './manager.js';
-import { logger } from '../utils/logger.js';
+import { SecurityConfig } from './manager';
+import { logger } from '../utils/logger';
 
 export enum SecurityLevel {
   STRICT = 'strict', // Maximum security - blocks most function calls
@@ -8,6 +8,17 @@ export enum SecurityLevel {
   DEVELOPMENT = 'development', // Least restrictive - for development/testing
 }
 
+/**
+ * Represents a security profile configuration for controlling access and interactions within the application.
+ *
+ * @property level - The security level applied to the profile.
+ * @property allowUIInteractions - Indicates if UI interactions are permitted.
+ * @property allowDOMQueries - Indicates if DOM queries are allowed.
+ * @property allowPropertyAccess - Indicates if property access is permitted.
+ * @property allowAssignments - Indicates if assignments to properties are allowed.
+ * @property allowFunctionCalls - Whitelist of allowed function patterns for invocation.
+ * @property riskThreshold - The risk threshold level ('low', 'medium', 'high', or 'critical') for the profile.
+ */
 export interface SecurityProfile {
   level: SecurityLevel;
   allowUIInteractions: boolean;
@@ -103,10 +114,25 @@ export function getSecurityConfig(
 }
 
 /**
- * Get the default security level
- * Always returns BALANCED for optimal security and functionality balance
+ * Get the default security level from environment variable or fallback to BALANCED
+ * Environment variable: SECURITY_LEVEL
+ * Valid values: strict, balanced, permissive, development
  */
 export function getDefaultSecurityLevel(): SecurityLevel {
+  const envSecurityLevel = process.env.SECURITY_LEVEL;
+  
+  if (envSecurityLevel) {
+    const normalizedLevel = envSecurityLevel.toLowerCase();
+    
+    // Check if the provided value is a valid SecurityLevel
+    if (Object.values(SecurityLevel).includes(normalizedLevel as SecurityLevel)) {
+      logger.info(`Using security level from environment: ${normalizedLevel}`);
+      return normalizedLevel as SecurityLevel;
+    } else {
+      logger.warn(`Invalid security level in environment variable: ${envSecurityLevel}. Valid values are: ${Object.values(SecurityLevel).join(', ')}. Falling back to BALANCED.`);
+    }
+  }
+  
   logger.info('Using BALANCED security level (default)');
   return SecurityLevel.BALANCED;
 }

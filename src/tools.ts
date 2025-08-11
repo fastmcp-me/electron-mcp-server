@@ -5,7 +5,7 @@ import {
   ReadElectronLogsSchema,
   GetElectronWindowInfoSchema,
   ToolInput,
-} from './schemas.js';
+} from './schemas';
 
 // Tool name enumeration
 export enum ToolName {

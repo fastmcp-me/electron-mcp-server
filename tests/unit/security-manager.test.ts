@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SecurityManager } from '../../src/security/manager.js';
-import { SecurityLevel } from '../../src/security/config.js';
-import { TEST_CONFIG } from '../conftest.js';
+import { SecurityManager } from '../../src/security/manager';
+import { SecurityLevel } from '../../src/security/config';
+import { TEST_CONFIG } from '../conftest';
 
 describe('SecurityManager Unit Tests', () => {
   describe('shouldSandboxCommand', () => {

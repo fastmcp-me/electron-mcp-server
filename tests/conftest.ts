@@ -5,7 +5,7 @@
  */
 
 import { beforeAll, afterAll } from 'vitest';
-import { GlobalTestSetup } from './support/setup.js';
+import { GlobalTestSetup } from './support/setup';
 
 // Global test setup that runs once before all tests
 beforeAll(async () => {
@@ -18,6 +18,6 @@ afterAll(async () => {
 });
 
 // Export commonly used test utilities for easy importing
-export { TestHelpers } from './support/helpers.js';
-export { TEST_CONFIG } from './support/config.js';
-export type { TestElectronApp } from './support/helpers.js';
+export { TestHelpers } from './support/helpers';
+export { TEST_CONFIG } from './support/config';
+export type { TestElectronApp } from './support/helpers';

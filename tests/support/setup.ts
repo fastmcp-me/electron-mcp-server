@@ -1,6 +1,6 @@
-import { logger } from '../../src/utils/logger.js';
-import { TestHelpers } from './helpers.js';
-import { TEST_CONFIG } from './config.js';
+import { logger } from '../../src/utils/logger';
+import { TestHelpers } from './helpers';
+import { TEST_CONFIG } from './config';
 import { mkdirSync, existsSync } from 'fs';
 
 /**
