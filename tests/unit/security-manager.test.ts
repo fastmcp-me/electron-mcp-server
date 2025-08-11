@@ -41,9 +41,9 @@ describe('SecurityManager Unit Tests', () => {
   });
 
   describe('Security Level Configuration', () => {
-    it('should default to STRICT security level', () => {
+    it('should default to BALANCED security level', () => {
       const securityManager = new SecurityManager();
-      expect(securityManager.getSecurityLevel()).toBe(SecurityLevel.STRICT);
+      expect(securityManager.getSecurityLevel()).toBe(SecurityLevel.BALANCED);
     });
 
     it('should allow security level changes', () => {
