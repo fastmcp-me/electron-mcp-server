@@ -632,31 +632,6 @@ describe('Electron Integration & Security Tests', () => {
     });
   });
 
-  describe('Rate Limiting and Throttling', () => {
-    it('should handle rapid successive requests', async () => {
-      const promises: Promise<any>[] = [];
-      const startTime = Date.now();
-
-      // Fire 10 rapid requests
-      for (let i = 0; i < 10; i++) {
-        promises.push(handleToolCall(createMCPRequest(ToolName.GET_ELECTRON_WINDOW_INFO, {})));
-      }
-
-      const results = await Promise.all(promises);
-      const endTime = Date.now();
-
-      // All requests should complete
-      expect(results).toHaveLength(10);
-
-      // Should complete in reasonable time (not hanging)
-      expect(endTime - startTime).toBeLessThan(30000);
-
-      // Most should succeed (some might be throttled)
-      const successCount = results.filter((r: any) => !r.isError).length;
-      expect(successCount).toBeGreaterThan(5);
-    });
-  });
-
   describe('Error Handling Integration', () => {
     it('should handle JavaScript errors gracefully', async () => {
       const result = await handleToolCall(

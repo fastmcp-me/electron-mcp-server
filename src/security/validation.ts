@@ -6,31 +6,8 @@ import { SecurityLevel, SECURITY_PROFILES, getDefaultSecurityLevel } from './con
 export const SecureCommandSchema = z.object({
   command: z.string().min(1).max(10000),
   args: z.any().optional(),
-  userId: z.string().optional(),
   sessionId: z.string().optional(),
 });
-
-export const UserPermissionSchema = z.object({
-  userId: z.string(),
-  permissions: z.array(
-    z.enum([
-      'execute_code',
-      'take_screenshot',
-      'read_logs',
-      'window_management',
-      'file_system',
-      'network_access',
-    ]),
-  ),
-  rateLimit: z
-    .object({
-      maxRequests: z.number().default(100),
-      windowMs: z.number().default(60000), // 1 minute
-    })
-    .optional(),
-});
-
-export type UserPermissions = z.infer<typeof UserPermissionSchema>;
 
 export interface ValidationResult {
   isValid: boolean;
@@ -366,63 +343,5 @@ export class InputValidator {
     // Just remove dangerous URL schemes and HTML tags
 
     return sanitized;
-  }
-
-  static validateUserPermissions(input: unknown): ValidationResult {
-    try {
-      const parsed = UserPermissionSchema.parse(input);
-      return {
-        isValid: true,
-        errors: [],
-        sanitizedInput: parsed,
-        riskLevel: 'low',
-      };
-    } catch (error) {
-      return {
-        isValid: false,
-        errors: [
-          `Invalid permissions structure: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        ],
-        riskLevel: 'high',
-      };
-    }
-  }
-}
-
-export class RateLimiter {
-  private requests: Map<string, number[]> = new Map();
-
-  checkLimit(userId: string, maxRequests: number = 100, windowMs: number = 60000): boolean {
-    const now = Date.now();
-    const userRequests = this.requests.get(userId) || [];
-
-    // Remove old requests outside the time window
-    const validRequests = userRequests.filter((timestamp) => now - timestamp < windowMs);
-
-    if (validRequests.length >= maxRequests) {
-      logger.warn(
-        `Rate limit exceeded for user ${userId}: ${validRequests.length}/${maxRequests} requests`,
-      );
-      return false;
-    }
-
-    // Add current request
-    validRequests.push(now);
-    this.requests.set(userId, validRequests);
-
-    return true;
-  }
-
-  getRemainingRequests(
-    userId: string,
-    maxRequests: number = 100,
-    windowMs: number = 60000,
-  ): number {
-    const now = Date.now();
-    const userRequests = this.requests.get(userId) || [];
-    const validRequests = userRequests.filter((timestamp) => now - timestamp < windowMs);
-    return Math.max(0, maxRequests - validRequests.length);
   }
 }

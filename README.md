@@ -50,7 +50,8 @@ Configure the security level and other settings through your MCP client configur
         "command": "npx",
         "args": ["-y", "electron-mcp-server"],
         "env": {
-          "SECURITY_LEVEL": "balanced"
+          "SECURITY_LEVEL": "balanced",
+          "SCREENSHOT_ENCRYPTION_KEY":"your-32-byte-hex-string"
         }
       }
     }
@@ -66,7 +67,8 @@ Configure the security level and other settings through your MCP client configur
       "command": "npx",
       "args": ["-y", "electron-mcp-server"],
       "env": {
-        "SECURITY_LEVEL": "balanced"
+        "SECURITY_LEVEL": "balanced",
+        "SCREENSHOT_ENCRYPTION_KEY":"your-32-byte-hex-string"
       }
     }
   }

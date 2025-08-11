@@ -6,7 +6,6 @@ import { logger } from '../utils/logger';
 export interface AuditLogEntry {
   timestamp: string;
   sessionId: string;
-  userId?: string;
   action: string;
   command?: string;
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
@@ -54,7 +53,6 @@ export class SecurityLogger {
         `Security Event [${entry.action}]: ${entry.success ? 'SUCCESS' : 'BLOCKED'}`,
         {
           sessionId: entry.sessionId,
-          userId: entry.userId,
           riskLevel: entry.riskLevel,
           executionTime: entry.executionTime,
         },
@@ -107,7 +105,6 @@ export class SecurityLogger {
   }
 
   async searchLogs(criteria: {
-    userId?: string;
     action?: string;
     riskLevel?: string;
     since?: Date;
@@ -118,10 +115,6 @@ export class SecurityLogger {
       const entries = await this.readLogEntries(criteria.since, criteria.until);
 
       let filtered = entries;
-
-      if (criteria.userId) {
-        filtered = filtered.filter((e) => e.userId === criteria.userId);
-      }
 
       if (criteria.action) {
         filtered = filtered.filter((e) => e.action === criteria.action);
